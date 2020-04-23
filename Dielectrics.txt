@@ -1,0 +1,4 @@
+Material,Relative Permittivity
+SiO2,3.9
+Al2O3,9.8
+HfO2,15.6

@@ -41,11 +41,16 @@ w = Ep/consts.hbar
 fields1 = '-Vgs', '+Vgs', 'Vds', 'Datapoints'
 params1 = -10, 10, 0.2, 100
 
-fields2 = 'Dielectric Permittivity', 'Dielectric Thickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility'
-params2 = er, tox1, W, L, mu
+fields2 = 'Dielectric Thickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility'
+params2 = tox1, W, L, mu
 
 V = []
 I = []
+
+# Load Values (dielectric materials etc. from txt file
+def loadDielectrics():
+    dielectrics = np.loadtxt('Dielectrics.txt', dtype=np.dtype('O'), delimiter=',', skiprows=1)
+    return dielectrics
 
 def fetch(entries):
     data = []
@@ -70,39 +75,49 @@ def makeform(root, fields, params):
         entries.append((field, ent))
     return entries
 
+def comboBoxSelection(dielecCombo):
+    return dielecCombo.get()
+
 def plotCurve(V, I, ax, canvas):
     ax.clear()
     ax.set_title('GFET Transfer Characteristic')
+    ax.set_ylabel(r'$I_{DS}$ (A)')
+    ax.set_xlabel(r'$V_{GS}$ (V)')
     ax.plot(V, I)
     canvas.draw()
 
-def init_func(i):
-    ax.clear()
-    ax.set_title('GFET Transfer Characteristic')
+def calculateIds(entries, entries2, eps, ax, canvas):
 
-def calculateIds(entries, ax, canvas):
-    
+    # Get data from the entry box and convert to right form for calculations   
     data = fetch(entries)
+    data2 = fetch(entries2)
+    
     start_voltage = float(data[0])
     end_voltage = float(data[1])
     Vds = float(data[2])
     datapoints = int(data[3])
+
+    tox = float(data2[0])*10**(-9)
+    W = float(data2[1])*10**(-6)
+    L = float(data2[2])*10**(-6)
+    mu = float(data2[3])
+    
+    er = float(eps.get().split("(")[1].replace(")",""))
+
+    Ct = er*consts.epsilon_0/tox
     
     Vgt = np.linspace(start_voltage, end_voltage, datapoints)
     Id = []
-
-    # Convert values to correct units
-    Wr = W*10**(-6)
-    Lr = L*10**(-6)
-    toxr = tox1*10**(-9)
     
     for i in range(datapoints):
         Veff = Vgt[i] + Vgt0
-        Id.append(abs((mu*Wr*Ct*(Veff-0.5*Vds))/(Lr/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
+        Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
 
     plotCurve(Vgt, Id, ax, canvas)
     
 if __name__ == '__main__':
+
+    dielecs = loadDielectrics()
 
     root = tk.Tk()
     root.geometry('800x600')
@@ -131,9 +146,26 @@ if __name__ == '__main__':
     tab2 = ttk.Frame(tab_control)
     tab_control.add(tab2, text= 'Device Parameters')
 
-    # Additional Widgets    
+    # Additional Widgets
     ents = makeform(tab1, fields1, params1)
     root.bind('<Return>', (lambda event, e=ents: fetch(e)))
+
+    dielecLabel = tk.Label(tab2, text='Relative Permittivity')
+    dielecCombo = ttk.Combobox(tab2)
+    vals = []
+    i = 0
+    for i in range(len(dielecs)):
+        vals.append(dielecs[i][0] + " (" + str(dielecs[i][1]) + ")")
+
+    dielecCombo['values'] = vals
+    dielecCombo.current(0) # First value in list is default
+    
+    root.bind("<<ComboboxSelected>>")
+
+    dielecLabel.grid(row=1, column=0)
+    dielecCombo.grid(row=1,column=1)
+    dielecLabel.pack()
+    dielecCombo.pack()
 
     ents2 = makeform(tab2, fields2, params2)
     root.bind('<Return>', (lambda event, e=ents2: fetch(e)))
@@ -141,11 +173,13 @@ if __name__ == '__main__':
     fig = plt.Figure(figsize=(5,4), dpi=100)
     ax = fig.add_subplot(111)
     ax.set_title('GFET Transfer Characteristic')
+    ax.set_ylabel(r'$I_{DS}$ (A)')
+    ax.set_xlabel(r'$V_{GS}$ (V)')
       
     b1 = tk.Button(tab1, text='Simulate',
-                  command=(lambda e=ents: calculateIds(e, ax, canvas)))
+                  command=(lambda e=ents, e2=ents2: calculateIds(e, e2, dielecCombo, ax, canvas)))
     b1.pack(side=tk.LEFT, padx=5, pady=5)
-    b2 = tk.Button(tab1, text='Quit', command=root.quit)
+    b2 = tk.Button(tab1, text='Load Sweep', command=root.quit)
     b2.pack(side=tk.LEFT, padx=5, pady=5)
 
     canvas = FigureCanvasTkAgg(fig, master=right)
