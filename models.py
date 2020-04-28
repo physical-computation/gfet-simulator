@@ -37,7 +37,7 @@ class RodriguezGFET:
             Veff = self.Vgs[i] + Vg0
             Id.append(abs((mu*W*Ct*(Veff-0.5*self.Vds))/(L/self.Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*self.Vds)))))
 
-        return Id
+        return {"Ids": Id}
 
 class ThieleGFET:
 
@@ -71,4 +71,4 @@ class ThieleGFET:
             den = L - (mu*self.Vds/w)*(consts.pi*Vch*(2*Vch*consts.elementary_charge**2)/(consts.pi*(consts.hbar*10**6)**2))**0.5
             Id.append(abs(num/den))
 
-        return Id
+        return {"Ids": Id}

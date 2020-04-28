@@ -1,6 +1,6 @@
 # Class to setup and manage GUI components for GFET simulator program.
 
-import GFET_IO as GIO
+import GFET_IO as gio
 import models as gfet
 
 import tkinter as tk
@@ -51,6 +51,7 @@ class GUI:
 
         self.modelCombo = None
         self.dielecCombo = None
+        self.data = {}
         
         left = tk.Frame(self.root, width=int(default_resolution[0]/2), height=default_resolution[1])
         right = tk.Frame(self.root, width=int(default_resolution[0]/2), height=default_resolution[1])
@@ -62,8 +63,9 @@ class GUI:
         left.pack(side="left")
         right.pack(side="right")
 
+        # Left Panel Tabs (settings etc)
         tab_control = ttk.Notebook(left)
-        tab_control.pack() # expand=1, fill='both')
+        tab_control.pack()
 
         self.tab1 = ttk.Frame(tab_control)
         tab_control.add(self.tab1,text= 'Sweep Parameters')
@@ -73,6 +75,16 @@ class GUI:
 
         self.setupParamsTab(self.tab2, self.root)
         self.setupSweepTab(self.tab1, self.root)
+
+        # Right Panel Tabs (plots etc)
+        tab_control2 = ttk.Notebook(right)
+        tab_control2.pack()
+
+        self.tab1 = ttk.Frame(tab_control2)
+        tab_control2.add(self.tab1,text= 'Transfer Characteristic')
+                        
+        self.tab2 = ttk.Frame(tab_control2)
+        tab_control2.add(self.tab2, text= 'I-V Characteristic')
         self.setupAxes(right)
 
     def fetch(self, entries):
@@ -101,48 +113,46 @@ class GUI:
 
         ent1 = self.fetch(ent)
 
-        print(ent1)
-        
         start_voltage = float(ent1[0])
         end_voltage = float(ent1[1])
         Vds = float(ent1[2])
         dps = int(ent1[3])
         
-        Vgt = np.linspace(start_voltage, end_voltage, dps)
+        Vgt = list(np.linspace(start_voltage, end_voltage, dps))
 
-        return Vgt, Vds, dps
+        return {"Vgs": Vgt,
+                "Vds": Vds,
+                "dps": dps}
 
     def loadModel(self, name, ents, ents2):
         self.model = name
 
         # Todo: figure out loading sweeps vs getting from the GUI
-        Vgs, Vds, datapoints = self.generateSweep(ents)
+        self.data.update(self.generateSweep(ents))
 
         params = self.fetch(ents2)
         eps = self.dielecCombo
 
-        print(params)
-
         if self.model == 'Rodriguez':
-            GFET = gfet.RodriguezGFET(params, Vds, Vgs, datapoints, eps)
-            Id = GFET.calculateIds()
+            GFET = gfet.RodriguezGFET(params, self.data["Vds"], self.data["Vgs"], self.data["dps"], eps)
+            self.data.update(GFET.calculateIds())
         elif self.model == 'Thiele':
-            GFET = gfet.ThieleGFET(params, Vds, Vgs, datapoints, eps)
-            Id = GFET.calculateIds()
+            GFET = gfet.ThieleGFET(params, self.data["Vds"], self.data["Vgs"], self.data["dps"], eps)
+            self.data.update(GFET.calculateIds())
         else:
             print('ERROR: No models available.')
 
         if self.model != None:
-            self.plotCurve(Vgs, Id)
+            self.plotCurve() # maybe all curves?
 
-    def plotCurve(self, V, I):
+    def plotCurve(self):
         self.ax.clear()
-        self.ax.set_title('GFET Transfer Characteristic')
+        self.ax.set_title('Transfer Characteristic')
         self.ax.set_ylabel(r'$I_{DS}$ (A)')
         self.ax.set_xlabel(r'$V_{GS}$ (V)')
-        lines = self.ax.plot(V, I)
+        lines = self.ax.plot(self.data["Vgs"], self.data["Ids"])
         self.ax.set_aspect(1./self.ax.get_data_ratio())
-        self.ax.ticklabel_format(axis='both',style='sci', scilimits=(0,0))    
+        self.ax.ticklabel_format(axis='y',style='sci', scilimits=(0,0))    
     #    datacursor(lines, display='single')
         self.canvas.draw()       
     
@@ -164,12 +174,14 @@ class GUI:
         modelLabel.pack()
         self.modelCombo.pack()
 
+        io = gio.GFET_IO()
+
         b1 = tk.Button(tab1, text='Simulate',
                   command=(lambda e=self.ents, e2=self.ents2: self.loadModel(self.modelCombo.get(), e, e2)))
         b1.pack(side=tk.LEFT, padx=5, pady=5)
-        b2 = tk.Button(tab1, text='Load Sweep', command=GIO.GFET_IO.loadSweep)
+        b2 = tk.Button(tab1, text='Load Sweep', command=io.loadSweep)
         b2.pack(side=tk.LEFT, padx=5, pady=5)
-        b3 = tk.Button(tab1, text='Export CSV', command=(lambda : GIO.GFET_IO.exportData(V, I)))
+        b3 = tk.Button(tab1, text='Export CSV', command=(lambda : io.exportData(self.data)))
         b3.pack(side=tk.LEFT, padx=5, pady=5)
         
     def setupParamsTab(self, tab2, root):
@@ -180,7 +192,7 @@ class GUI:
         dielecLabel = tk.Label(tab2, text='Relative Permittivity')
         self.dielecCombo = ttk.Combobox(tab2, state='readonly')
 
-        dielecs = GIO.GFET_IO.loadDielectrics()
+        dielecs = gio.GFET_IO.loadDielectrics()
         
         vals = []
         i = 0
@@ -199,7 +211,7 @@ class GUI:
     def setupAxes(self, frame):
         fig = plt.Figure(figsize=(5,4), dpi=100)
         self.ax = fig.add_subplot(111)
-        self.ax.set_title('GFET Transfer Characteristic')
+        self.ax.set_title('Transfer Characteristic')
         self.ax.set_ylabel(r'$I_{DS}$ (A)')
         self.ax.set_xlabel(r'$V_{GS}$ (V)')
         self.ax.set_aspect(1./self.ax.get_data_ratio())
