@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import filedialog
 
 import numpy as np
+import itertools
+import csv
 
 class GFET_IO:
 
@@ -16,18 +18,36 @@ class GFET_IO:
         return dielectrics
 
     def exportData(self, data):
-        f = filedialog.asksaveasfile(mode='w', defaultextension=".csv")
-        if f is None:
+        filename = filedialog.asksaveasfilename()#mode='w', defaultextension=".csv")
+        if filename is None:
             return
     
         # Group voltages and currents into pairs. For general data exporting,
         # maybe some unified structure needed...
         self.data.update(data)
         
-        dataToSave = ''.join([str(i)+","+str(j)+"\n" for i,j in zip(self.data["Vgs"],self.data["Ids"])])
-    
-        f.write(dataToSave)
-        f.close()
+        dataPairs = []
+
+        for index, Id in enumerate(self.data["Ids"]): # for each entry in Ids
+            column = []
+            for datapoint in range(len(self.data["Ids"][index])): #for each datapoint in that index
+                column.append(str(self.data["Vgs"][datapoint]) + ',' + str(self.data["Ids"][index][datapoint]))
+            dataPairs.append(column)
+
+        rows = list(zip(*itertools.chain(dataPairs)))
+
+        headerRow = []
+        for dp in self.data["Vds"]:
+            row = "Vds:" + ',' + str(dp)
+            headerRow.append(row)
+        
+        with open(filename + '.csv', 'w') as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
+            writer.writerow(headerRow)
+            for row in rows:
+                print(row)
+                writer.writerow(row)
+            f.close()
 
     def loadSweep(self):
         f = filedialog.askopenfile(mode='r', filetypes=[('CSV Files', '*.csv')])

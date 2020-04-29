@@ -47,15 +47,6 @@ class GUI:
         self.root.geometry(str(default_resolution[0]) + 'x' + str(default_resolution[1]))
         self.root.title('GFET Simulation')
 
-##        self.ents = ''
-##        self.ents2 = ''
-##        self.model = None
-##        self.ax = None
-##        self.ax2 = None
-##        self.canvas = None
-##        self.canvas2 = None
-##        self.modelCombo = None
-##        self.dielecCombo = None
         self.data = {}
         
         top = tk.Frame(self.root, width=default_resolution[0], height=top_height)
@@ -67,9 +58,6 @@ class GUI:
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
-#        top.grid(row=0)
-#        left.grid(row=1,column=0, ipadx=5)
-#        right.grid(row=1,column=1)
         top.pack(fill="both")
         left.pack(side="left")
         right.pack(side="right")
