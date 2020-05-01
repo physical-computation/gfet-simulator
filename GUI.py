@@ -28,11 +28,11 @@ Vgt0 = -0.8229 # TG Voltage at Dirac pt, volts. (Avg from measurements)
 
 datapoints = 100
 
-VgsSweepFields = 'Vgs Start', 'Vgs End', 'Vgs Step'
-VgsSweepParams = -10, 10, 0.2
+transSweepFields = 'Vgs Start', 'Vgs End', 'Vgs Step', 'Vds Start', 'Vds End', 'Vds Step'
+transSweepParams = -10, 10, 0.2,  0.2, 0.2, 0.1
 
-VdsSweepFields = 'Vds Start', 'Vds End', 'Vds Step'
-VdsSweepParams = 0.2, 0.2, 0.1
+ivSweepFields = 'Vgs Start', 'Vgs End', 'Vgs Step', 'Vds Start', 'Vds End', 'Vds Step'
+ivSweepParams = 0, 2, 0.5,  0, 1, 0.1
 
 fields2 = 'Dielectric Thickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility', 'Phonon Energy', 'Carrier Density', 'Gate Threshold\nVoltage'
 params2 = tox1, W, L, mu, Ep, N, Vgt0
@@ -53,14 +53,12 @@ class GUI:
         left = tk.Frame(self.root, width=int(default_resolution[0]/2), height=(default_resolution[1]-top_height))
         right = tk.Frame(self.root, width=int(default_resolution[0]/2), height=(default_resolution[1]-top_height))
 
-        
-        # layout all of the main containers
-        self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_columnconfigure(0, weight=1)
-
         top.pack(fill="both")
         left.pack(side="left")
         right.pack(side="right")
+
+        for frame in [left, right]:
+            frame.pack_propagate(0)
 
         # Left Panel Tabs (settings etc)
         tab_control = ttk.Notebook(left)
@@ -102,20 +100,18 @@ class GUI:
 
         for index,field in enumerate(fields):
             row = tk.Frame(root)
-            lab = tk.Label(row, width=15, text=field, anchor='w')
+            lab = tk.Label(row, width=20, text=field, anchor='w')
 
-            ent = tk.Entry(row, bd=1)
+            ent = tk.Entry(row, bd=1, width=25)
             ent.insert(0, str(params[index]))
             
             row.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
             lab.pack(side=tk.LEFT)
             ent.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
-#            lab.grid(row=index+2,column=0)
-#            ent.grid(row=index+2,column=1)
             entries.append((field, ent))
         return entries
 
-    def generateSweep(self, ent, profile, vgsModel, vdsModel):
+    def generateTransferSweep(self, ent, vgsModel, vdsModel):
 
         ent1 = self.fetch(ent)
 
@@ -127,18 +123,34 @@ class GUI:
         Vds_end = float(ent1[4])
         Vds_step = float(ent1[5])
 
-##        print('\nSweep Parameters:')
-##        print('Vgs Range: ' + str(Vgs_start) + ' to ' + str(Vgs_end) + ', Step: ' +str(Vgs_step))
-##        print('Vds Range: ' + str(Vds_start) + ' to ' + str(Vds_end) + ', Step: ' +str(Vds_step))
+        VgsStepCorrection = 0
+        VdsStepCorrection = 1
 
-        # See if step correction is needed, i.e. a step must be at least 1
-        if profile == "Sweep Vgs, Step Vds":
-            VgsStepCorrection = 0
-            VdsStepCorrection = 1
-        elif profile == "Step Vgs, Sweep Vds":
-            VgsStepCorrection = 1
-            VdsStepCorrection = 10
+        retDict = self.genSweepModels(vgsModel, vdsModel, Vgs_start, Vgs_end, Vgs_step, VgsStepCorrection, Vds_start, Vds_end, Vds_step, VdsStepCorrection) 
             
+        return retDict
+
+    def generateIVSweep(self, ent, vgsModel, vdsModel):
+
+        ent1 = self.fetch(ent)
+
+        Vgs_start = float(ent1[6])
+        Vgs_end = float(ent1[7])
+        Vgs_step = float(ent1[8])
+        Vds_start = float(ent1[9])
+        Vds_end = float(ent1[10])
+        Vds_step = float(ent1[11])
+
+        VgsStepCorrection = 1
+        VdsStepCorrection = 0
+
+        retDict = self.genSweepModels(vgsModel, vdsModel, Vgs_start, Vgs_end, Vgs_step, VgsStepCorrection, Vds_start, Vds_end, Vds_step, VdsStepCorrection)            
+        
+        return retDict
+
+    # Used by generateTransferSweep and by generateIVSweep
+    def genSweepModels(self, vgsModel, vdsModel, Vgs_start, Vgs_end, Vgs_step, VgsStepCorrection, Vds_start, Vds_end, Vds_step, VdsStepCorrection):
+
         # Vgs Model
         if vgsModel == "Linear":
             dps = VgsStepCorrection + int(abs(Vgs_start/Vgs_step) + abs(Vgs_end/Vgs_step))
@@ -161,33 +173,52 @@ class GUI:
             Vds = list(np.linspace(Vds_start, Vds_end, dps))
         elif vdsModel == "Logarithmic":
             dps = VdsStepCorrection + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
-            Vds = list(np.logspace(Vds_start, Vds_end, dps))        
+            Vds = list(np.logspace(Vds_start, Vds_end, dps))
+
         return {"Vgs": Vgs,
                 "Vds": Vds}
-
-    def loadModel(self, name, profile, vgsModel, vdsModel, ents, ents2):
+    
+    def loadModel(self, name, vgsModel, vdsModel, ents, ents2):
         self.model = name
 
-        # Todo: figure out loading sweeps vs getting from the GUI
-        self.data.update(self.generateSweep(ents, profile, vgsModel, vdsModel))
+        # Need to update self.data here so there's actually data to export, broken atm!
+
+        ivSweep = self.generateIVSweep(ents, vgsModel, vdsModel)
+        transferSweep = self.generateTransferSweep(ents, vgsModel, vdsModel)
+
+        self.data.update({"IVChars": ivSweep,
+                          "TransChars": transferSweep})
 
         params = self.fetch(ents2)
         eps = self.dielecCombo
 
         if self.model == 'Rodriguez':
-            GFET = gfet.RodriguezGFET(params, self.data["Vds"], self.data["Vgs"], eps)
-            self.data.update(GFET.calculateIds())
+            GFET = gfet.RodriguezGFET(params, ivSweep, transferSweep, eps)
+            transferChars = GFET.calculateTransferChars()
+            ivChars = GFET.calculateIVChars()
+            self.data["IVChars"].update({"Ids": ivChars})
+            self.data["TransChars"].update({"Ids": transferChars})
         elif self.model == 'Thiele':
-            GFET = gfet.ThieleGFET(params, self.data["Vds"], self.data["Vgs"], eps)
-            self.data.update(GFET.calculateIds())
+            GFET = gfet.ThieleGFET(params, ivSweep, transferSweep, eps)
+            transferChars = GFET.calculateTransferChars()
+            ivChars = GFET.calculateIVChars()
+            self.data["IVChars"].update({"Ids": ivChars})
+            self.data["TransChars"].update({"Ids": transChars})
         else:
             print('ERROR: No models available.')
 
-        if self.model != None:
-            self.plotTransferChars() # maybe all curves?
-            self.plotIVChars()
+        print("\n\nIV Chars:")
+        print(self.data["IVChars"])
 
-    def plotTransferChars(self):
+        print("\n\nTrans Chars:")
+        print(self.data["TransChars"])
+        
+        if self.model != None:
+            self.plotTransferChars(transferSweep["Vgs"], transferChars)
+            self.plotIVChars(ivSweep["Vds"], ivChars)
+
+    # Plot the transfer characteristics
+    def plotTransferChars(self, Vgs, Ids):
         plotted = False
         
         self.ax.clear()
@@ -195,16 +226,17 @@ class GUI:
         self.ax.set_ylabel(r'$I_{DS}$ (A)')
         self.ax.set_xlabel(r'$V_{GS}$ (V)')
 
-        if "Vgs" in self.data:
-            for index,entry in enumerate(self.data["Ids"]):
-                self.ax.plot(self.data["Vgs"], self.data["Ids"][index])
+        if Vgs:
+            for index,entry in enumerate(Ids):
+                 self.ax.plot(Vgs, Ids[index])
             plotted = True
 
         self.ax.set_aspect(1./self.ax.get_data_ratio())
         self.ax.ticklabel_format(axis='y',style='sci', scilimits=(0,0))
         self.canvas.draw()
-        
-    def plotIVChars(self):
+
+    # Plot the IV Characteristics
+    def plotIVChars(self, Vds, Ids):
         plotted = False
         
         self.ax2.clear()
@@ -212,68 +244,71 @@ class GUI:
         self.ax2.set_ylabel(r'$I_{DS}$ (A)')
         self.ax2.set_xlabel(r'$V_{DS}$ (V)')
 
-        if "Vds" in self.data:
-            for index,entry in enumerate(self.data["Vds"]):
-                self.ax2.plot(self.data["Vds"], self.data["Ids"])
+        if Vds:
+            for index,entry in enumerate(Ids):
+                self.ax2.plot(Vds, Ids[index])
             plotted = True
         
         self.ax2.set_aspect(1./self.ax2.get_data_ratio())
         self.ax2.ticklabel_format(axis='y',style='sci', scilimits=(0,0))
         self.canvas2.draw() 
-    
+
+    # Tab for voltage sweep settings
     def setupSweepTab(self, tab1, root):
-        frame = tk.Frame(tab1)
+        
+        top = tk.Frame(tab1, height=(tab1.winfo_height()/2))
+        bottom = tk.Frame(tab1, height=(tab1.winfo_height()/2))
 
         # Setup Model Selection Box
-        modelLabel = tk.Label(frame, text='GFET Model')
-        self.modelCombo = ttk.Combobox(frame, state='readonly')
+        modelLabel = tk.Label(top, text='GFET Model')
+        self.modelCombo = ttk.Combobox(top, state='readonly')
         self.modelCombo['values'] = 'Rodriguez', 'Thiele' # Will need to auto generate, maybe can
                                                           # see if from class names in models?
         self.modelCombo.current(0) # First value in list is default
         modelLabel.grid(row=0, column=0)
         self.modelCombo.grid(row=0, column=1)
     
-        frame.pack()
-
-        # Setup Sweep Selection Box
-        # Which sweep to do
-        sweepOptionLabel = tk.Label(frame, text='Voltage Sweep Profile')
-        self.sweepOption = ttk.Combobox(frame, state='readonly')
-        self.sweepOption['values'] = 'Sweep Vgs, Step Vds', 'Step Vgs, Sweep Vds'
-        self.sweepOption.current(0) # First value in list is default
-        sweepOptionLabel.grid(row=1, column=0)
-        self.sweepOption.grid(row=1, column=1)
-
+        top.pack()
+        bottom.pack()
 
         # Vgs Sweep Settings
-        VgsSweepLabel = tk.Label(frame, text='Vgs Sweep Model')
-        self.VgsSweepCombo = ttk.Combobox(frame, state='readonly')
+        VgsSweepLabel = tk.Label(top, text='Vgs Sweep Model')
+        self.VgsSweepCombo = ttk.Combobox(top, state='readonly')
         self.VgsSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
         self.VgsSweepCombo.current(0) # First value in list is default
         VgsSweepLabel.grid(row=2, column=0)
         self.VgsSweepCombo.grid(row=2, column=1)
 
-        self.ents = self.makeform(tab1, VgsSweepFields, VgsSweepParams)
-        root.bind('<Return>', (lambda event, e=self.ents: self.fetch(e)))
-
         # Vds Sweep Settings
-        VdsSweepLabel = tk.Label(frame, text='Vds Sweep Model')
-        self.VdsSweepCombo = ttk.Combobox(frame, state='readonly')
+        VdsSweepLabel = tk.Label(top, text='Vds Sweep Model')
+        self.VdsSweepCombo = ttk.Combobox(top, state='readonly')
         self.VdsSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
         self.VdsSweepCombo.current(0) # First value in list is default
         VdsSweepLabel.grid(row=3, column=0)
         self.VdsSweepCombo.grid(row=3, column=1)
 
-        self.ents = self.ents + (self.makeform(tab1, VdsSweepFields, VdsSweepParams))
-        root.bind('<Return>', (lambda event, e=self.ents: self.fetch(e)))
-
         root.bind("<<ComboboxSelected>>")
-        
+
+        # Tabs for transfer chars sweep and for IV chars sweep
+        tab_control = ttk.Notebook(bottom)
+        tab_control.pack()
+
+        stab1 = ttk.Frame(tab_control)
+        tab_control.add(stab1, text= 'Transfer Characteristics')
+                        
+        tab2 = ttk.Frame(tab_control)
+        tab_control.add(tab2, text= 'I-V Characteristics')
+
+        self.ents = self.makeform(stab1, transSweepFields, transSweepParams)
+       
+        self.ents = self.ents + (self.makeform(tab2, ivSweepFields, ivSweepParams))
+        root.bind('<Return>', (lambda event, e=self.ents: self.fetch(e)))
+    
     def setupTopFrame(self,top):
         io = gio.GFET_IO()
         
         b1 = tk.Button(top, text='Simulate',
-                  command=(lambda e=self.ents, e2=self.ents2: self.loadModel(self.modelCombo.get(), self.sweepOption.get(), self.VgsSweepCombo.get(), self.VdsSweepCombo.get(), e, e2)))
+                  command=(lambda e=self.ents, e2=self.ents2: self.loadModel(self.modelCombo.get(), self.VgsSweepCombo.get(), self.VdsSweepCombo.get(), e, e2)))
         b1.pack(side='left')
         b2 = tk.Button(top, text='Load Sweep', command=io.loadSweep)
         b2.pack(side='left')
@@ -322,6 +357,7 @@ class GUI:
 
         self.canvas2 = FigureCanvasTkAgg(fig2, master=frame2)
         self.canvas2.get_tk_widget().pack()
-        
-        self.plotTransferChars()
-        self.plotIVChars()
+
+        # Initialise empty plot
+        self.plotTransferChars(None, None)
+        self.plotIVChars(None, None)

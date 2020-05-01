@@ -10,13 +10,15 @@ from numpy.lib.scimath import sqrt as csqrt
 
 class RodriguezGFET:
 
-    def __init__(self, params, VdsSweep, VgsSweep, eps):
+    def __init__(self, params, ivSweep, transSweep, eps):
         self.params = params
-        self.Vds = VdsSweep
-        self.Vgs = VgsSweep
+        self.ivVds = ivSweep["Vds"]
+        self.ivVgs = ivSweep["Vgs"]
+        self.transVds = transSweep["Vds"]
+        self.transVgs = transSweep["Vgs"]
         self.eps = eps
     
-    def calculateIds(self):
+    def calculateTransferChars(self):
         
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[1])*10**(-6)
@@ -33,14 +35,41 @@ class RodriguezGFET:
                 
         Ids = []
 
-        for i in range(len(self.Vds)):
+        for i in range(len(self.transVds)):
             Id = []
-            Vds = self.Vds[i]
-            for j in range(len(self.Vgs)):
-                Veff = self.Vgs[j] + Vg0
+            Vds = self.transVds[i]
+            for j in range(len(self.transVgs)):
+                Veff = self.transVgs[j] + Vg0
                 Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
             Ids.append(Id)
-        return {"Ids": Ids}
+        return Ids
+
+    def calculateIVChars(self):
+        
+        tox = float(self.params[0])*10**(-9)
+        W = float(self.params[1])*10**(-6)
+        L = float(self.params[2])*10**(-6)
+        mu = float(self.params[3])
+        Ep = float(self.params[4])
+        N = float(self.params[5])
+        Vg0 = float(self.params[6])
+        
+        er = float(self.eps.get().split("(")[1].replace(")",""))
+
+        Ct = er*consts.epsilon_0/tox
+        w = (2.24*10**(13))/consts.pi
+                
+        Ids = []
+
+        for i in range(len(self.ivVgs)):
+            Id = []
+            Vgs = self.ivVgs[i]
+            for j in range(len(self.ivVds)):
+                Veff = Vgs + Vg0
+                Vds = self.ivVds[j]
+                Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
+            Ids.append(Id)
+        return Ids   
 
 # Model of Thiele et al. (https://doi.org/10.1063/1.3357398)
 

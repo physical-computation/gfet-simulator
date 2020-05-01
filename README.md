@@ -2,12 +2,12 @@
 Python Program to Model GFET Characteristics
 
 Author: Nathaniel Tye (njt48@cam.ac.uk)
-Date: 23.04.2020
+Date: 01.05.2020
 
 Purpose:
 This program is designed as a tool allowing people to play around with different parameters of GFETs,
 e.g. channel dimensions, oxide thickness, operating temperature, and to test these devices under a range
-of bias conditions, currently based on Rodriguez et al.'s model [1].
+of bias conditions. Currently, Rodriguez et al. [1] and Thiele et al.'s [2] models have been implemented.
 
 Motivation:
 GFETs are being used in the research of several people in the group, and potentially by new students as well,
@@ -21,20 +21,29 @@ differences in existing GFET models, and instead be able to delve straight in an
 
 
 Current Features:
-- Generate a gate-voltage sweep;
-- Set drain-source bias voltage;
-- Plot graph of the Id vs Vgs transfer characteristic
+- User can specify physical device parameters (channel dimensions, gate oxide thickness,
+  Carrier density, dielectric material, carrier mobility)
+- Simulates both I-V and Transfer characteristics with user-defined sweeps
+- Can do linear, dual-linear and logarithmic sweeps of gate-source and drain-source
+  Voltages
+- Can export CSV files of the measured transfer and IV characteristics
+- Can load in a user-defined sweep from excel (limited functionality at present)
 
 Features to add:
-- Load in a user-design voltage sweep from a .csv file
-- Step drain-source voltage
-- Export .csv files
-- Multiple selectable dielectric materials (e.g. Al2O3, HfO2, SiO2...)
-- Additional models (e.g. high-frequency, multi-gate)
-- Plot additional characteristics (e.g. Ids vs Vds, conductivity...)
+- Additional models (e.g. high-frequency, multi-gate [e.g. dual top gat, back gate] )
+- Include model parameters and other information in exported CSV files
+- Improve user-defined sweep loading
+- Plot additional characteristics (e.g. conductivity, capacitance, frequency response...)
+    -- Include parameters such as temperature to this end
 - Possibly even export a SPICE model of the device tested, helping 
   facilitate rapid circuit-level simulation
+
+Other general program functionality todo:
+- Input validation & general stability
+- Aesthetics
 
 References:
 [1] S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design," 
     in IEEE Transactions on Electron Devices, vol. 61, no. 4, pp. 1199-1206, April 2014. (doi.org:/10.1109/TED.2014.2302372)
+
+[2]
