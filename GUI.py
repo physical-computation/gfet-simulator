@@ -22,8 +22,8 @@ tox1 = 50 # TG oxide layer thickness, metres
 W = 40 # Channel Width, metres
 L = 120 # Channel Length, metres
 mu = 7000 # Effective carrier mobility
-N = 0.5*10**(16) # carrier density
-Ep = 0.56*10**(-19) # Surface phonon energy of the substrate
+N = 5e17 # carrier density
+Ep = 5.6e-20 # Surface phonon energy of the substrate
 Vgt0 = -0.8229 # TG Voltage at Dirac pt, volts. (Avg from measurements)
 
 datapoints = 100
@@ -115,7 +115,7 @@ class GUI:
             entries.append((field, ent))
         return entries
 
-    def generateSweep(self, ent):
+    def generateSweep(self, ent, profile, vgsModel, vdsModel):
 
         ent1 = self.fetch(ent)
 
@@ -127,28 +127,49 @@ class GUI:
         Vds_end = float(ent1[4])
         Vds_step = float(ent1[5])
 
-        print('\nSweep Parameters:')
-        print('Vgs Range: ' + str(Vgs_start) + ' to ' + str(Vgs_end) + ', Step: ' +str(Vgs_step))
-        print('Vds Range: ' + str(Vds_start) + ' to ' + str(Vds_end) + ', Step: ' +str(Vds_step))
-        
-        dps = int(abs(Vgs_start/Vgs_step) + abs(Vgs_end/Vgs_step))
-        print('Vgs Datapoints: ' + str(dps))
-        
-        Vgs = list(np.linspace(Vgs_start, Vgs_end, dps))
+##        print('\nSweep Parameters:')
+##        print('Vgs Range: ' + str(Vgs_start) + ' to ' + str(Vgs_end) + ', Step: ' +str(Vgs_step))
+##        print('Vds Range: ' + str(Vds_start) + ' to ' + str(Vds_end) + ', Step: ' +str(Vds_step))
 
-        dps = 1 + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
-        print('Vds Datapoints: ' + str(dps))
-        
-        Vds = list(np.linspace(Vds_start, Vds_end, dps))
-
+        # See if step correction is needed, i.e. a step must be at least 1
+        if profile == "Sweep Vgs, Step Vds":
+            VgsStepCorrection = 0
+            VdsStepCorrection = 1
+        elif profile == "Step Vgs, Sweep Vds":
+            VgsStepCorrection = 1
+            VdsStepCorrection = 10
+            
+        # Vgs Model
+        if vgsModel == "Linear":
+            dps = VgsStepCorrection + int(abs(Vgs_start/Vgs_step) + abs(Vgs_end/Vgs_step))
+            Vgs = list(np.linspace(Vgs_start, Vgs_end, dps))
+        elif vgsModel == "Dual-Linear":
+            dps = VgsStepCorrection + int(abs(Vgs_start/Vgs_step) + abs(Vgs_end/Vgs_step))
+            # i.e. forwards and backwards sweep
+            Vgs = list(np.linspace(Vgs_start, Vgs_end, dps)) + list(np.linspace(Vgs_end, Vgs_start, dps))
+        elif vgsModel == "Logarithmic":
+            dps = VgsStepCorrection + int(abs(Vgs_start/Vgs_step) + abs(Vgs_end/Vgs_step))
+            # i.e. forwards and backwards sweep
+            Vgs = list(np.logspace(Vgs_start, Vgs_end, dps)) + list(np.linspace(Vgs_end, Vgs_start, dps))
+            
+        # Vds Model
+        if vdsModel == "Linear":
+            dps = VdsStepCorrection + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
+            Vds = list(np.linspace(Vds_start, Vds_end, dps))
+        elif vdsModel == "Dual-Linear":
+            dps = VdsStepCorrection + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
+            Vds = list(np.linspace(Vds_start, Vds_end, dps))
+        elif vdsModel == "Logarithmic":
+            dps = VdsStepCorrection + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
+            Vds = list(np.logspace(Vds_start, Vds_end, dps))        
         return {"Vgs": Vgs,
                 "Vds": Vds}
 
-    def loadModel(self, name, ents, ents2):
+    def loadModel(self, name, profile, vgsModel, vdsModel, ents, ents2):
         self.model = name
 
         # Todo: figure out loading sweeps vs getting from the GUI
-        self.data.update(self.generateSweep(ents))
+        self.data.update(self.generateSweep(ents, profile, vgsModel, vdsModel))
 
         params = self.fetch(ents2)
         eps = self.dielecCombo
@@ -215,24 +236,33 @@ class GUI:
         frame.pack()
 
         # Setup Sweep Selection Box
+        # Which sweep to do
+        sweepOptionLabel = tk.Label(frame, text='Voltage Sweep Profile')
+        self.sweepOption = ttk.Combobox(frame, state='readonly')
+        self.sweepOption['values'] = 'Sweep Vgs, Step Vds', 'Step Vgs, Sweep Vds'
+        self.sweepOption.current(0) # First value in list is default
+        sweepOptionLabel.grid(row=1, column=0)
+        self.sweepOption.grid(row=1, column=1)
+
+
         # Vgs Sweep Settings
         VgsSweepLabel = tk.Label(frame, text='Vgs Sweep Model')
-        VgsSweepCombo = ttk.Combobox(frame, state='readonly')
-        VgsSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
-        VgsSweepCombo.current(0) # First value in list is default
-        VgsSweepLabel.grid(row=1, column=0)
-        VgsSweepCombo.grid(row=1, column=1)
+        self.VgsSweepCombo = ttk.Combobox(frame, state='readonly')
+        self.VgsSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
+        self.VgsSweepCombo.current(0) # First value in list is default
+        VgsSweepLabel.grid(row=2, column=0)
+        self.VgsSweepCombo.grid(row=2, column=1)
 
         self.ents = self.makeform(tab1, VgsSweepFields, VgsSweepParams)
         root.bind('<Return>', (lambda event, e=self.ents: self.fetch(e)))
 
         # Vds Sweep Settings
         VdsSweepLabel = tk.Label(frame, text='Vds Sweep Model')
-        VdsSweepCombo = ttk.Combobox(frame, state='readonly')
-        VdsSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
-        VdsSweepCombo.current(0) # First value in list is default
-        VdsSweepLabel.grid(row=2, column=0)
-        VdsSweepCombo.grid(row=2, column=1)
+        self.VdsSweepCombo = ttk.Combobox(frame, state='readonly')
+        self.VdsSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
+        self.VdsSweepCombo.current(0) # First value in list is default
+        VdsSweepLabel.grid(row=3, column=0)
+        self.VdsSweepCombo.grid(row=3, column=1)
 
         self.ents = self.ents + (self.makeform(tab1, VdsSweepFields, VdsSweepParams))
         root.bind('<Return>', (lambda event, e=self.ents: self.fetch(e)))
@@ -243,11 +273,15 @@ class GUI:
         io = gio.GFET_IO()
         
         b1 = tk.Button(top, text='Simulate',
-                  command=(lambda e=self.ents, e2=self.ents2: self.loadModel(self.modelCombo.get(), e, e2)))
+                  command=(lambda e=self.ents, e2=self.ents2: self.loadModel(self.modelCombo.get(), self.sweepOption.get(), self.VgsSweepCombo.get(), self.VdsSweepCombo.get(), e, e2)))
         b1.pack(side='left')
         b2 = tk.Button(top, text='Load Sweep', command=io.loadSweep)
         b2.pack(side='left')
-        b3 = tk.Button(top, text='Export CSV', command=(lambda : io.exportData(self.data)))
+        b3 = tk.Menubutton(top, text='Export Data')
+        b3.menu = tk.Menu(b3)
+        b3["menu"] = b3.menu
+        b3.menu.add_command(label="Export Transfer Characteristics", command=(lambda : io.exportTransferChars(self.data)))
+        b3.menu.add_command(label="Export I-V Characteristics", command=(lambda : io.exportIVChars(self.data)))
         b3.pack(side='left')
         
     def setupParamsTab(self, tab2, root):

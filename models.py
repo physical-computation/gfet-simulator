@@ -1,11 +1,12 @@
-# Class containing code for the GFET model derived by Rodriguez et al.
-#
-# Ref.: S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design,"
-# in IEEE Transactions on Electron Devices, vol. 61, no. 4, pp. 1199-1206, April 2014. (doi.org:/10.1109/TED.2014.2302372)
+# Class containing code for different GFET models
 
 # For Physical Constants
 from scipy import constants as consts
 from numpy.lib.scimath import sqrt as csqrt
+
+# Model of Rodriguez et al.
+# Ref.: S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design,"
+# in IEEE Transactions on Electron Devices, vol. 61, no. 4, pp. 1199-1206, April 2014. (doi.org:/10.1109/TED.2014.2302372)
 
 class RodriguezGFET:
 
@@ -40,6 +41,8 @@ class RodriguezGFET:
                 Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
             Ids.append(Id)
         return {"Ids": Ids}
+
+# Model of Thiele et al. (https://doi.org/10.1063/1.3357398)
 
 class ThieleGFET:
 
