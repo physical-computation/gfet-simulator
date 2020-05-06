@@ -12,9 +12,10 @@ class GFET_IO:
     def __init__(self, *args, **kwargs):
         self.transData = {}
         self.ivData = {}
+        self.extSweep = False
 
     # Load Values (dielectric materials etc. from txt file
-    def loadDielectrics():
+    def loadDielectrics(self):
         dielectrics = np.loadtxt('Dielectrics.txt', dtype=np.dtype('O'), delimiter=',', skiprows=1)
         return dielectrics
 
@@ -96,6 +97,8 @@ class GFET_IO:
         if f is not None:
             content = f.read().split('\n')
             
-            self.data["V"] = [float(item) for item in content]
-            extSweep = True
-            datapoints = len(self.data["V"])
+            data = [float(item) for item in content]
+
+            self.transData.update({"Vgs": data})
+            self.extSweep = True
+            

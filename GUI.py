@@ -47,6 +47,8 @@ class GUI:
         self.root.geometry(str(default_resolution[0]) + 'x' + str(default_resolution[1]))
         self.root.title('GFET Simulation')
 
+        self.io = gio.GFET_IO()
+
         self.data = {}
         
         top = tk.Frame(self.root, width=default_resolution[0], height=top_height)
@@ -61,7 +63,7 @@ class GUI:
             frame.pack_propagate(0)
 
         # Left Panel Tabs (settings etc)
-        tab_control = ttk.Notebook(left)
+        tab_control = ttk.Notebook(left, style='Custom.TNotebook')
         tab_control.pack()
 
         self.ltab1 = ttk.Frame(tab_control)
@@ -74,7 +76,7 @@ class GUI:
         self.setupSweepTab(self.ltab1, self.root)
 
         # Right Panel Tabs (plots etc)
-        tab_control2 = ttk.Notebook(right)
+        tab_control2 = ttk.Notebook(right, style='Custom.TNotebook')
         tab_control2.pack()
 
         self.rtab1 = ttk.Frame(tab_control2)
@@ -83,7 +85,10 @@ class GUI:
         self.rtab2 = ttk.Frame(tab_control2)
         tab_control2.add(self.rtab2, text= 'I-V Characteristic')
 
-        self.setupAxes(self.rtab1, self.rtab2)
+        self.rtab3 = ttk.Frame(tab_control2)
+        tab_control2.add(self.rtab3, text= 'Conductance')
+
+        self.setupAxes(self.rtab1, self.rtab2, self.rtab3)
 
         # Top Panel stuff (i.e. buttons)
         self.setupTopFrame(top)
@@ -181,10 +186,17 @@ class GUI:
     def loadModel(self, name, vgsModel, vdsModel, ents, ents2):
         self.model = name
 
-        # Need to update self.data here so there's actually data to export, broken atm!
-
+        # Need to deal with the external sweep loading stuff here
+        # Currently just does 'if external, don't generate'
         ivSweep = self.generateIVSweep(ents, vgsModel, vdsModel)
-        transferSweep = self.generateTransferSweep(ents, vgsModel, vdsModel)
+
+        if self.io.extSweep:
+            transferSweep = self.io.transData
+            subSweep = {"Vds": self.generateTransferSweep(ents, vgsModel, vdsModel)["Vds"]}
+            print(subSweep)
+            transferSweep.update(subSweep)
+        else: 
+            transferSweep = self.generateTransferSweep(ents, vgsModel, vdsModel)
 
         self.data.update({"IVChars": ivSweep,
                           "TransChars": transferSweep})
@@ -203,19 +215,14 @@ class GUI:
             transferChars = GFET.calculateTransferChars()
             ivChars = GFET.calculateIVChars()
             self.data["IVChars"].update({"Ids": ivChars})
-            self.data["TransChars"].update({"Ids": transChars})
+            self.data["TransChars"].update({"Ids": transferChars})
         else:
             print('ERROR: No models available.')
-
-        print("\n\nIV Chars:")
-        print(self.data["IVChars"])
-
-        print("\n\nTrans Chars:")
-        print(self.data["TransChars"])
         
         if self.model != None:
             self.plotTransferChars(transferSweep["Vgs"], transferChars)
             self.plotIVChars(ivSweep["Vds"], ivChars)
+            self.plotConductance(transferSweep["Vgs"], transferChars)
 
     # Plot the transfer characteristics
     def plotTransferChars(self, Vgs, Ids):
@@ -234,6 +241,7 @@ class GUI:
         self.ax.set_aspect(1./self.ax.get_data_ratio())
         self.ax.ticklabel_format(axis='y',style='sci', scilimits=(0,0))
         self.canvas.draw()
+        plt.tight_layout(w_pad=0.5)
 
     # Plot the IV Characteristics
     def plotIVChars(self, Vds, Ids):
@@ -251,7 +259,28 @@ class GUI:
         
         self.ax2.set_aspect(1./self.ax2.get_data_ratio())
         self.ax2.ticklabel_format(axis='y',style='sci', scilimits=(0,0))
-        self.canvas2.draw() 
+        plt.tight_layout()
+        self.canvas2.draw()
+
+    # Plot the Conductance Characteristics
+    def plotConductance(self, Vgs, Ids):
+        plotted = False
+        
+        self.ax3.clear()
+        self.ax3.set_title('Conductance')
+        self.ax3.set_ylabel(r'$g_m$ (S)')
+        self.ax3.set_xlabel(r'$V_{GS}$ (V)')
+
+        if Vgs:
+            gm = [i/j for i, j in zip(Ids, Vgs)]
+            for index,entry in enumerate(gm):
+                self.ax3.plot(Vgs, gm[index])
+            plotted = True
+        
+        self.ax3.set_aspect(1./self.ax3.get_data_ratio())
+        self.ax3.ticklabel_format(axis='y',style='sci', scilimits=(0,0))
+        plt.tight_layout()
+        self.canvas3.draw() 
 
     # Tab for voltage sweep settings
     def setupSweepTab(self, tab1, root):
@@ -305,18 +334,16 @@ class GUI:
         root.bind('<Return>', (lambda event, e=self.ents: self.fetch(e)))
     
     def setupTopFrame(self,top):
-        io = gio.GFET_IO()
-        
         b1 = tk.Button(top, text='Simulate',
                   command=(lambda e=self.ents, e2=self.ents2: self.loadModel(self.modelCombo.get(), self.VgsSweepCombo.get(), self.VdsSweepCombo.get(), e, e2)))
         b1.pack(side='left')
-        b2 = tk.Button(top, text='Load Sweep', command=io.loadSweep)
+        b2 = tk.Button(top, text='Load Sweep', command=self.io.loadSweep)
         b2.pack(side='left')
         b3 = tk.Menubutton(top, text='Export Data')
         b3.menu = tk.Menu(b3)
         b3["menu"] = b3.menu
-        b3.menu.add_command(label="Export Transfer Characteristics", command=(lambda : io.exportTransferChars(self.data)))
-        b3.menu.add_command(label="Export I-V Characteristics", command=(lambda : io.exportIVChars(self.data)))
+        b3.menu.add_command(label="Export Transfer Characteristics", command=(lambda : self.io.exportTransferChars(self.data)))
+        b3.menu.add_command(label="Export I-V Characteristics", command=(lambda : self.io.exportIVChars(self.data)))
         b3.pack(side='left')
         
     def setupParamsTab(self, tab2, root):
@@ -324,7 +351,7 @@ class GUI:
         dielecLabel = tk.Label(frame, text='Relative Permittivity')
         self.dielecCombo = ttk.Combobox(frame, state='readonly')
 
-        dielecs = gio.GFET_IO.loadDielectrics()
+        dielecs = self.io.loadDielectrics()
         
         vals = []
         i = 0
@@ -345,19 +372,29 @@ class GUI:
         root.bind('<Return>', (lambda event, e=self.ents2: self.fetch(e)))
 
 
-    def setupAxes(self, frame1, frame2):
-        fig = plt.Figure(figsize=(4,4), dpi=100)
+    def setupAxes(self, frame1, frame2, frame3):
+        # Transfer Characteristic Plot
+        fig = plt.Figure(figsize=(5,5), dpi=100)
         self.ax = fig.add_subplot(111)
 
         self.canvas = FigureCanvasTkAgg(fig, master=frame1)
         self.canvas.get_tk_widget().pack()
 
-        fig2 = plt.Figure(figsize=(4,4), dpi=100)
+        # I-V Characteristic Plot
+        fig2 = plt.Figure(figsize=(5,5), dpi=100)
         self.ax2 = fig2.add_subplot(111)
 
         self.canvas2 = FigureCanvasTkAgg(fig2, master=frame2)
         self.canvas2.get_tk_widget().pack()
 
+        # Conductance Plot
+        fig3 = plt.Figure(figsize=(5,5), dpi=100)
+        self.ax3 = fig3.add_subplot(111)
+
+        self.canvas3 = FigureCanvasTkAgg(fig3, master=frame3)
+        self.canvas3.get_tk_widget().pack()
+
         # Initialise empty plot
         self.plotTransferChars(None, None)
         self.plotIVChars(None, None)
+        self.plotConductance(None, None)
