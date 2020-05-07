@@ -31,7 +31,8 @@ class GFET_IO:
         for index, Id in enumerate(self.transData["Ids"]): # for each entry in Ids
             column = []
             for datapoint in range(len(self.transData["Ids"][index])): #for each datapoint in that index
-                column.append(str(self.transData["Vgs"][datapoint]) + ',' + str(self.transData["Ids"][index][datapoint]))
+                column.append(str(self.transData["Vgs"][datapoint]) + ','
+                              + str(self.transData["Ids"][index][datapoint]))
             dataPairs.append(column)
 
         rows = list(zip(*itertools.chain(dataPairs)))
@@ -66,8 +67,9 @@ class GFET_IO:
 
         for index, Id in enumerate(self.ivData["Ids"]): # for each entry in Ids
             column = []
-            for datapoint in range(len(self.ivData["Ids"][index])): #for each datapoint in that index
-                column.append(str(self.ivData["Vds"][datapoint]) + ',' + str(self.ivData["Ids"][index][datapoint]))
+            for datapoint in range(len(self.ivData["Ids"][index])): #for each datapoint in the index
+                column.append(str(self.ivData["Vds"][datapoint]) + ','
+                              + str(self.ivData["Ids"][index][datapoint]))
             dataPairs.append(column)
 
         rows = list(zip(*itertools.chain(dataPairs)))

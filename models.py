@@ -2,6 +2,10 @@
 
 # For Physical Constants
 from scipy import constants as consts
+
+import scipy.integrate as integrate
+import scipy.special as special
+
 from numpy.lib.scimath import sqrt as csqrt
 
 # Model of Rodriguez et al.
@@ -26,13 +30,14 @@ class RodriguezGFET:
         mu = float(self.params[3])
         Ep = float(self.params[4])
         N = float(self.params[5])
-        Vg0 = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-
         Ct = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
-                
+        Vg0 = consts.elementary_charge*N/Ct
+        Cgs = Ct*W*L
+        Cgd = (Ct*W*L)/2
+        
         Ids = []
 
         for i in range(len(self.transVds)):
@@ -40,9 +45,20 @@ class RodriguezGFET:
             Vds = self.transVds[i]
             for j in range(len(self.transVgs)):
                 Veff = self.transVgs[j] + Vg0
-                Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
+                Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds +
+                            (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
             Ids.append(Id)
-        return Ids
+            
+        # Calculate transconductance & transit frequency
+        gm =[]
+        fT = []
+        for entry in Ids:
+            gm.append([abs(i/j) for i, j in zip(entry, self.transVgs)])
+            res = []
+            for entry in gm:
+                res = [i/(2*consts.pi*(Cgs+Cgd)) for i in entry]
+            fT.append(res)
+        return Ids, gm, fT
 
     def calculateIVChars(self):
         
@@ -52,12 +68,11 @@ class RodriguezGFET:
         mu = float(self.params[3])
         Ep = float(self.params[4])
         N = float(self.params[5])
-        Vg0 = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-
         Ct = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
+        Vg0 = consts.elementary_charge*N/Ct
                 
         Ids = []
 
@@ -67,7 +82,8 @@ class RodriguezGFET:
             for j in range(len(self.ivVds)):
                 Veff = Vgs + Vg0
                 Vds = self.ivVds[j]
-                Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds + (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
+                Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds +
+                            (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
             Ids.append(Id)
         return Ids   
 
@@ -91,12 +107,11 @@ class ThieleGFET:
         mu = float(self.params[3])
         Ep = float(self.params[4])
         N = float(self.params[5])
-        Vg0 = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-
         Ct = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
+        Vg0 = consts.elementary_charge*N/Ct
                 
         Ids = []
 
@@ -109,7 +124,15 @@ class ThieleGFET:
                 den = L - (mu*Vds/w)*(consts.pi*Vch*(2*Vch*consts.elementary_charge**2)/(consts.pi*(consts.hbar*10**6)**2))**0.5
                 Id.append(abs(num/den))
             Ids.append(Id)
-        return Ids
+            
+        # Calculate transconductance & transit frequency
+        for entry in Ids:
+            gm = [abs(i/j) for i, j in zip(entry, Vgs)]
+            fT = []
+            for element in gm:
+                fT.append(element/(2*consts.pi*(Cgs+Cgd)))
+            
+        return Ids, gm, fT
 
     def calculateIVChars(self):
         
@@ -119,12 +142,11 @@ class ThieleGFET:
         mu = float(self.params[3])
         Ep = float(self.params[4])
         N = float(self.params[5])
-        Vg0 = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-
         Ct = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
+        Vg0 = consts.elementary_charge*N/Ct
                 
         Ids = []
 
