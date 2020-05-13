@@ -37,6 +37,7 @@ params2 = tox1, W, L, mu, Ep, N
 
 default_resolution = [1024, 600]
 top_height = 100
+scatter_size = 10
 
 class GUI:
 
@@ -221,7 +222,7 @@ class GUI:
                               "fT": fT})
         elif self.model == 'Thiele':
             GFET = gfet.ThieleGFET(params, ivSweep, transferSweep, eps)
-            transferChars = GFET.calculateTransferChars()
+            transferChars, gm, fT = GFET.calculateTransferChars()
             ivChars = GFET.calculateIVChars()
             self.data["IVChars"].update({"Ids": ivChars})
             self.data["TransChars"].update({"Ids": transferChars})
@@ -252,10 +253,19 @@ class GUI:
         self.ax.set_xlabel(r'$V_{GS}$ (V)')
 
         if Vgs:
+            maxId = 0
+            minId = 0
             for index,entry in enumerate(Ids):
-                 self.ax.plot(Vgs, Ids[index])
+                self.ax.scatter(Vgs, Ids[index], s=scatter_size)
+                localmax = max(entry)
+                localmin = min(entry)
+                if localmax >= maxId:
+                    maxId = localmax
+                if localmin <= minId:
+                    minId = localmin
             plotted = True
-
+            self.ax.set_ylim(bottom=round(minId, 3), top=round(maxId,2))
+        
         self.ax.set_aspect(1./self.ax.get_data_ratio())
         self.ax.ticklabel_format(axis='y',style='sci', scilimits=(0,0))
         self.canvas.draw()
@@ -271,7 +281,7 @@ class GUI:
 
         if Vds:
             for index,entry in enumerate(Ids):
-                self.ax2.plot(Vds, Ids[index])
+                self.ax2.scatter(Vds, Ids[index], s=scatter_size)
             plotted = True
         
         self.ax2.set_aspect(1./self.ax2.get_data_ratio())
@@ -289,7 +299,7 @@ class GUI:
 
         if Vgs:
             for entry in gm:
-                self.ax3.plot(Vgs, entry)
+                self.ax3.scatter(Vgs, entry, s=scatter_size)
                 plotted = True
             
         self.ax3.set_aspect(1./self.ax3.get_data_ratio())
@@ -306,7 +316,7 @@ class GUI:
 
         if Vgs:
             for entry in fT:
-                self.ax4.plot(Vgs, entry)
+                self.ax4.scatter(Vgs, entry, s=scatter_size)
                 plotted = True
             
         self.ax4.set_aspect(1./self.ax4.get_data_ratio())
@@ -315,6 +325,7 @@ class GUI:
     
     def restoreDefaultSettings(self, notebook):
         current = notebook.index("current")
+        self.io.extSweep = False
                 
         if current == 0: # Trans sweep
             for index,entry in enumerate(self.ents):

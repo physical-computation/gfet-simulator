@@ -88,6 +88,9 @@ class RodriguezGFET:
         return Ids   
 
 # Model of Thiele et al. (https://doi.org/10.1063/1.3357398)
+# Not currently too accurate, requires solving Cq and Vch self-sonsistently, not sure how
+# to do that yet, probably something clever in numpy. may even need parallelising depending
+# time taken...
 
 class ThieleGFET:
 
@@ -98,7 +101,7 @@ class ThieleGFET:
         self.transVds = transSweep["Vds"]
         self.transVgs = transSweep["Vgs"]
         self.eps = eps
-
+    
     def calculateTransferChars(self):
         
         tox = float(self.params[0])*10**(-9)
@@ -112,6 +115,8 @@ class ThieleGFET:
         Ct = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
+        Cgs = Ct*W*L
+        Cgd = (Ct*W*L)/2
                 
         Ids = []
 
@@ -126,12 +131,14 @@ class ThieleGFET:
             Ids.append(Id)
             
         # Calculate transconductance & transit frequency
+        gm =[]
+        fT = []
         for entry in Ids:
-            gm = [abs(i/j) for i, j in zip(entry, Vgs)]
-            fT = []
-            for element in gm:
-                fT.append(element/(2*consts.pi*(Cgs+Cgd)))
-            
+            gm.append([abs(i/j) for i, j in zip(entry, self.transVgs)])
+            res = []
+            for entry in gm:
+                res = [i/(2*consts.pi*(Cgs+Cgd)) for i in entry]
+            fT.append(res)
         return Ids, gm, fT
 
     def calculateIVChars(self):
