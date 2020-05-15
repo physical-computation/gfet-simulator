@@ -128,8 +128,9 @@ class ThieleGFET:
             return x, xp
 
         # Integral for denominator, can't integrate directly a power of a lambda function!
-        def integrand(x, rho):
-            return rhosh(x)**0.5
+        def integrand(Vx, rho, omega):
+            A = 10**(-3)
+            return ((consts.pi*rhosh(Vx))**(0.5+A*Vx**2))/omega
         
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[1])*10**(-6)
@@ -147,7 +148,7 @@ class ThieleGFET:
         Cbg = Ctg
         Cgd = (Ct*W*L)/2
 
-        omega = w / consts.hbar
+        omega = w/consts.hbar#(Ep*consts.e)/consts.hbar
                 
         Ids = []
 
@@ -162,10 +163,9 @@ class ThieleGFET:
                 N = 100 # iterations
                 Cq, Varr = fixedp(Vch, e, N)
 
-                rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
-
+                rhosh = lambda Vx: abs(-0.5*Cq*((Vtg-Vx)*(Ctg/Ctg+0.5*Cq)))/consts.e
                 num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
-                den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
+                den = L - mu*integrate.quad(integrand, 0, Vds, args=(rhosh, omega))[0]
                 
                 Id.append(abs(num/den))
             Ids.append(Id)
@@ -216,7 +216,7 @@ class ThieleGFET:
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ctg = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
-        vF = 10**7 # m/s
+        vF = 10**8 # m/s
         Vg0 = consts.elementary_charge*N/Ctg
         omega = w / consts.hbar
                 
@@ -230,7 +230,7 @@ class ThieleGFET:
                 Vds = self.ivVds[i]
                 
                 e = 0.001 # error/Volts
-                N = 100 # iterations
+                N = 200 # iterations
                 Cq, Varr = fixedp(Vch, e, N)
                 Vch = (Vtg-Vds)*(Ctg/Ctg+0.5*Cq)
                 rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
@@ -274,7 +274,8 @@ class HuGFET:
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox
-        w = (2.24*10**(13))/consts.pi
+#        w = (2.24*10**(13))/consts.pi
+        w = (55*10**(-3))*consts.e      
         Vg0 = consts.elementary_charge*N/Ct
         Cgs = Ct*W*L
         Cgd = (Ct*W*L)/2
