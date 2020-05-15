@@ -126,6 +126,10 @@ class ThieleGFET:
                 itr = itr +1
 
             return x, xp
+
+        # Integral for denominator, can't integrate directly a power of a lambda function!
+        def integrand(x, rho):
+            return rhosh(x)**0.5
         
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[1])*10**(-6)
@@ -142,6 +146,8 @@ class ThieleGFET:
         Ctg = Ct*W*L
         Cbg = Ctg
         Cgd = (Ct*W*L)/2
+
+        omega = w / consts.hbar
                 
         Ids = []
 
@@ -155,9 +161,12 @@ class ThieleGFET:
                 e = 0.001 # error/Volts
                 N = 100 # iterations
                 Cq, Varr = fixedp(Vch, e, N)
-                Vch = (Vtg-Vds)*(Ctg/Ctg+0.5*Cq)
-                num = (mu*W*(Vch**2)*Vds*consts.elementary_charge**3)/(consts.pi*(consts.hbar*10**6)**2)
-                den = L - (mu*Vds/w)*(consts.pi*Vch*(2*Vch*consts.elementary_charge**2)/(consts.pi*(consts.hbar*10**6)**2))**0.5
+
+                rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
+
+                num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
+                den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
+                
                 Id.append(abs(num/den))
             Ids.append(Id)
             
@@ -171,6 +180,7 @@ class ThieleGFET:
                 res = [i/(2*consts.pi*(Ctg+Cgd)) for i in entry]
             fT.append(res)
         return Ids, gm, fT
+
 
     def calculateIVChars(self):
 
@@ -191,6 +201,10 @@ class ThieleGFET:
                 itr = itr +1
 
             return x, xp
+
+        # Integral for denominator, can't integrate directly a power of a lambda function!
+        def integrand(x, rho):
+            return rhosh(x)**0.5
         
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[1])*10**(-6)
@@ -204,6 +218,7 @@ class ThieleGFET:
         w = (2.24*10**(13))/consts.pi
         vF = 10**7 # m/s
         Vg0 = consts.elementary_charge*N/Ctg
+        omega = w / consts.hbar
                 
         Ids = []
 
@@ -218,8 +233,10 @@ class ThieleGFET:
                 N = 100 # iterations
                 Cq, Varr = fixedp(Vch, e, N)
                 Vch = (Vtg-Vds)*(Ctg/Ctg+0.5*Cq)
-                num = (mu*W*(Vch**2)*Vds*consts.elementary_charge**3)/(consts.pi*(consts.hbar*10**6)**2)
-                den = L - (mu*Vds/w)*(consts.pi*Vch*(2*Vch*consts.elementary_charge**2)/(consts.pi*(consts.hbar*10**6)**2))**0.5
+                rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
+
+                num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
+                den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
                 Id.append(abs(num/den))
             Ids.append(Id)
         return Ids
