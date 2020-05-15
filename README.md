@@ -30,7 +30,7 @@ Current Features:
 - Can load in a user-defined sweep from excel (limited functionality at present)
 
 Features to add:
-- Additional models (e.g. high-frequency, multi-gate [e.g. dual top gat, back gate] )
+- Additional models (e.g. high-frequency, multi-gate [e.g. dual top gate, back gate] )
 - Include model parameters and other information in exported CSV files
 - Improve user-defined sweep loading
 - Plot additional characteristics (e.g. conductivity, capacitance, frequency response...)
