@@ -85,16 +85,17 @@ class RodriguezGFET:
             for j in range(len(self.ivVds)):
                 Veff = Vtg + Vg0
                 Vds = self.ivVds[j]
-                Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds +
+
+                if Vds ==0:
+                    Id.append(0)
+                else:
+                    Id.append(abs((mu*W*Ct*(Veff-0.5*Vds))/(L/Vds +
                             (mu/w)*(csqrt(consts.pi*Ct/consts.elementary_charge))*(csqrt(Veff-0.5*Vds)))))
             Ids.append(Id)
         return Ids   
 
 
 # Model of Thiele et al. (https://doi.org/10.1063/1.3357398)
-# Not currently too accurate, requires solving Cq and Vch self-sonsistently, not sure how
-# to do that yet, probably something clever in numpy. may even need parallelising depending
-# time taken...
 class ThieleGFET:
 
     def __init__(self, params, ivSweep, transSweep, eps):
@@ -106,6 +107,8 @@ class ThieleGFET:
         self.transVtg = transSweep["Vtg"]
         self.transVbg = transSweep["Vbg"]
         self.eps = eps
+        self.N = 200 # Num Iterations for self-consisten eqn
+        self.gds = []
     
     def calculateTransferChars(self):
 
@@ -148,9 +151,13 @@ class ThieleGFET:
         Cbg = Ctg
         Cgd = (Ct*W*L)/2
 
+        Rs = 400
+        Rd = Rs
+
         omega = w/consts.hbar#(Ep*consts.e)/consts.hbar
                 
         Ids = []
+        gds = []
 
         for i in range(len(self.transVds)):
             Id = []
@@ -160,8 +167,7 @@ class ThieleGFET:
                 Vtg = self.transVtg[j]
                 
                 e = 0.001 # error/Volts
-                N = 100 # iterations
-                Cq, Varr = fixedp(Vch, e, N)
+                Cq, Varr = fixedp(Vch, e, self.N)
 
                 rhosh = lambda Vx: abs(-0.5*Cq*((Vtg-Vx)*(Ctg/Ctg+0.5*Cq)))/consts.e
                 num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
@@ -169,21 +175,24 @@ class ThieleGFET:
                 
                 Id.append(abs(num/den))
             Ids.append(Id)
-            
+
         # Calculate transconductance & transit frequency
         gm =[]
         fT = []
-        for entry in Ids:
+        for index, entry in enumerate(Ids):
             gm.append([abs(i/j) for i, j in zip(entry, self.transVtg)])
+            gd = self.gds[index]
             res = []
+            
             for entry in gm:
-                res = [i/(2*consts.pi*(Ctg+Cgd)) for i in entry]
+                res = [i/(2*consts.pi*((Ctg+Cgd)*(1+gd*(Rs+Rd)+Cgd*i*(Rs+Rd)))) for i in entry]
             fT.append(res)
         return Ids, gm, fT
 
 
+    #       IV Chars        #
+    #                       #
     def calculateIVChars(self):
-
         # Cq in terms of Bch
         def f(Vch):
             return Vch*(2*consts.e**3)/(consts.pi*(consts.hbar*vF)**2)
@@ -192,14 +201,12 @@ class ThieleGFET:
             e = 1
             xp = []
             itr=0
-
             while(e>tol and itr<N):
                 x = f(x0)
                 e = norm(x0-x)
                 x0 = x
                 xp.append(x0)
                 itr = itr +1
-
             return x, xp
 
         # Integral for denominator, can't integrate directly a power of a lambda function!
@@ -226,19 +233,27 @@ class ThieleGFET:
             Id = []
             Vtg = self.ivVtg[i]
             Vch = Vtg - Vg0 # Vch is initially the first voltage
+            
             for j in range(len(self.ivVds)):
                 Vds = self.ivVds[i]
-                
-                e = 0.001 # error/Volts
-                N = 200 # iterations
-                Cq, Varr = fixedp(Vch, e, N)
-                Vch = (Vtg-Vds)*(Ctg/Ctg+0.5*Cq)
-                rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
 
-                num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
-                den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
-                Id.append(abs(num/den))
+                if Vds ==0:
+                    Id.append(0)
+                else:
+                    e = 0.001 # error/Volts
+                    Cq, Varr = fixedp(Vch, e, self.N)
+                    Vch = (Vtg-Vds)*(Ctg/Ctg+0.5*Cq)
+                    rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
+
+                    num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
+                    den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
+                    Id.append(abs(num/den))
             Ids.append(Id)
+
+        for index, entry in enumerate(Ids):
+            dIds = max(entry)-min(entry)
+            dVds = max(self.ivVds)-min(self.ivVds)
+            self.gds.append(dIds/dVds)
         return Ids
 
 
@@ -255,13 +270,6 @@ class HuGFET:
         self.transVtg = transSweep["Vtg"]
         self.transVbg = transSweep["Vbg"]
         self.eps = eps
-
-    def z1Integrand(self, x, nF):
-        return x/(np.exp(x-nF) + 1)
-
-    def z2Integrand(self, x, nF, Uds):
-        return x/(np.exp(x-nF-Uds) + 1)
-        
     
     def calculateTransferChars(self):
         
@@ -274,8 +282,7 @@ class HuGFET:
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox
-#        w = (2.24*10**(13))/consts.pi
-        w = (55*10**(-3))*consts.e      
+        w = (2.24*10**(13))/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
         Cgs = Ct*W*L
         Cgd = (Ct*W*L)/2
@@ -303,7 +310,7 @@ class HuGFET:
             Vdsef = self.transVds[i]
             Vds = (1-beta)*Vdsef
             
-            Uds = consts.elementary_charge*Vds/consts.k*T
+            Uds = (consts.elementary_charge*Vds)/(consts.Boltzmann*T)
 
             for j in range(len(self.transVtg)):
 
@@ -318,20 +325,14 @@ class HuGFET:
                 Vch = (np.sqrt((Ct+Cb)**2 + 2*K*(Vt*Ct+Vb*Cb)) - (Ct+Cb))/K
 
                 n0 = (K*Vch**2)/(2*consts.elementary_charge) + N
-
-                Ef = consts.elementary_charge*Vch
-                Ec = 0 # Stub value
                 
-                nF = (Ef-Ec)/consts.k*T
+                nF = (consts.elementary_charge*Vch)/(consts.Boltzmann*T)
 
-#                print("\nexp(x-nF): " + str(np.exp(np.inf)) + "\texp(x-nF-Uds): " +str())
+                integrand = lambda x: x/(np.exp(x-nF) + 1)
+                integrand2 = lambda x: x/(np.exp(x-nF+Uds) + 1)
 
-#                print("\nnF: " + str(nF) + "\tnF-Uds: " + str(nF-Uds))
-
-                zeta1 = integrate.quad(self.z1Integrand, 0, np.inf, args=(nF))
-                zeta2 = integrate.quad(self.z2Integrand, 0, np.inf, args=(nF, Uds))
-
-#                print("Zeta1: " + str(zeta1) + "\tZeta2: " + str(zeta2))
+                zeta1 = integrate.quad(integrand, 0, np.inf)
+                zeta2 = integrate.quad(integrand2, 0, np.inf)
                 
                 num = consts.elementary_charge*W*vF*n0*(1-r)*(1-(zeta2[0]/zeta1[0]))
                 
@@ -364,17 +365,78 @@ class HuGFET:
         Ct = er*consts.epsilon_0/tox
         w = (2.24*10**(13))/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
+
+        vF = 9.71*10**5 # m/s, from literature, ref 11 in Hu paper
+        T = 298 # kelvin
+
+        # Update later/add settings, but for now no back gate
+        Cb = 0
+        Vb = 0
+        Vt0 = 0.8 
+        
+        K = ((2*consts.elementary_charge**3)/consts.pi)/(consts.hbar*vF)**2
+
+        # Fitting params from paper
+        delta = 0.8
+        alpha = 0.9
+        beta = 0.11
+        theta = 7.5
                 
         Ids = []
 
         for i in range(len(self.ivVtg)):
             Id = []
-            Vtg = self.ivVtg[i]
+            Vt = abs(self.ivVtg[i])
+
+            Vch = (np.sqrt((Ct+Cb)**2 + 2*K*(Vt*Ct+Vb*Cb)) - (Ct+Cb))/K
+            
             for j in range(len(self.ivVds)):
-                Vch = Vtg-Vg0
-                Vds = self.ivVds[i]
-                num = (mu*W*(Vch**2)*Vds*consts.elementary_charge**3)/(consts.pi*(consts.hbar*10**6)**2)
-                den = L - (mu*Vds/w)*(consts.pi*Vch*(2*Vch*consts.elementary_charge**2)/(consts.pi*(consts.hbar*10**6)**2))**0.5
-                Id.append(abs(num/den))
+
+                Vdsef = self.ivVds[i]
+                Vds = (1-beta)*Vdsef
+
+                if Vds ==0:
+                    Id.append(0)
+                else:
+                    Uds = (consts.elementary_charge*Vds)/(consts.Boltzmann*T)
+                    
+                    ell = L*(delta/Uds)**alpha
+                    
+                    l = (2*mu*consts.k*T)/(theta*consts.elementary_charge*vF)
+
+                    r = ell/(ell+l)
+
+                    n0 = (K*Vch**2)/(2*consts.elementary_charge) + N
+                    
+                    nF = (consts.elementary_charge*Vch)/(consts.Boltzmann*T)
+
+                    integrand = lambda x: x/(np.exp(x-nF) + 1)
+                    integrand2 = lambda x: x/(np.exp(x-nF+Uds) + 1)
+
+                    zeta1 = integrate.quad(integrand, 0, np.inf)
+                    zeta2 = integrate.quad(integrand2, 0, np.inf)
+                    
+                    num = consts.elementary_charge*W*vF*n0*(1-r)*(1-(zeta2[0]/zeta1[0]))                    
+                    den = 1+r+(1-r)*(zeta2[0]/zeta1[0])
+                    Id.append(abs(num/den))
             Ids.append(Id)
-        return Ids 
+        return Ids
+
+
+#***************************************************************************************#
+#                           Dual-Gate Model                                             #
+#***************************************************************************************#
+class DualGateGFET:
+
+    def __init__(self, params, ivSweep, transSweep, eps):
+        self.params = params
+        self.ivVds = ivSweep["Vds"]
+        self.ivVtg = ivSweep["Vtg"]
+        self.ivVbg = ivSweep["Vbg"]
+        self.transVds = transSweep["Vds"]
+        self.transVtg = transSweep["Vtg"]
+        self.transVbg = transSweep["Vbg"]
+        self.eps = eps
+        self.N = 200 # Num Iterations for self-consisten eqn
+        self.gds = []
+    

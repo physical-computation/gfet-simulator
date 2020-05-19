@@ -23,17 +23,18 @@ L = 120 # Channel Length, metres
 mu = 7000 # Effective carrier mobility
 N = 5e-17 # Dopant density, assume basically zero
 Ep = 5.6e-20 # Surface phonon energy of the substrate
+T = 298 # Operating temperature, default is room temp (in Kelvin)
 
 # Default Sweep Settings
 transSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg Start', 'Vbg End', 'Vbg Step', 'Vds Start', 'Vds End', 'Vds Step'
 transSweepParams = -10, 10, 0.2, 0, 0, 1,  0.2, 0.2, 0.1
 
 ivSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg Start', 'Vbg End', 'Vbg Step', 'Vds Start', 'Vds End', 'Vds Step'
-ivSweepParams = 0, 2, 0.5, 0, 0, 1, 0.1, 1, 0.01
+ivSweepParams = 0, 2, 0.5, 0, 0, 1, 0, 1, 0.01
 
 fields2 = ('Dielectric Thickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility (cm2/V/s)',
-            'Phonon Energy (J)', 'Effective Dopant\nDensity')
-params2 = tox1, W, L, mu, Ep, N
+            'Phonon Energy (J)', 'Effective Dopant\nDensity', 'Operating Temperature (K)')
+params2 = tox1, W, L, mu, Ep, N, T
 
 default_resolution = [1024, 600]
 top_height = 100
@@ -252,8 +253,8 @@ class GUI:
                               "fT": fT})
         elif self.model == 'Thiele':
             GFET = gfet.ThieleGFET(params, ivSweep, transferSweep, eps)
-            transferChars, gm, fT = GFET.calculateTransferChars()
             ivChars = GFET.calculateIVChars()
+            transferChars, gm, fT = GFET.calculateTransferChars()
             self.data["IVChars"].update({"Ids": ivChars})
             self.data["TransChars"].update({"Ids": transferChars})
         elif self.model == 'Hu':
@@ -321,10 +322,21 @@ class GUI:
         self.ax2.set_ylim(bottom=0, top=0.01)
         
         if Vds:
+            for index, entry in enumerate(Ids):
+                for entry2 in Ids[index]:
+                    if entry2 < 0:
+                        print(entry2)
             self.ax2.autoscale(enable=True)
-
+            maxId = 0
+            minId = 0
             for index,entry in enumerate(Ids):
                 self.ax2.scatter(Vds, Ids[index], s=scatter_size)
+                localmax = max(entry)
+                localmin = min(entry)
+                if localmax >= maxId:
+                    maxId = localmax
+                if localmin <= minId:
+                    minId = localmin
             plotted = True
         
         self.ax2.set_aspect(1./self.ax2.get_data_ratio())
