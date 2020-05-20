@@ -17,9 +17,10 @@ import numpy as np
 from scipy import constants as consts
 
 # Default Device Parameters
-tox1 = 50 # TG oxide layer thickness, metres
-W = 40 # Channel Width, metres
-L = 120 # Channel Length, metres
+tox1 = 50 # TG oxide layer thickness, nm
+tox2 = 50 # BG oxide layer thickness, nm
+W = 40 # Channel Width, um
+L = 120 # Channel Length, um
 mu = 7000 # Effective carrier mobility
 N = 5e-17 # Dopant density, assume basically zero
 Ep = 5.6e-20 # Surface phonon energy of the substrate
@@ -32,9 +33,9 @@ transSweepParams = -10, 10, 0.2, 0, 0, 1,  0.2, 0.2, 0.1
 ivSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg Start', 'Vbg End', 'Vbg Step', 'Vds Start', 'Vds End', 'Vds Step'
 ivSweepParams = 0, 2, 0.5, 0, 0, 1, 0, 1, 0.01
 
-fields2 = ('Dielectric Thickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility (cm2/V/s)',
+fields2 = ('Top Dielectric\nThickness (nm)', 'Bottom Dielectric\nThickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility (cm2/V/s)',
             'Phonon Energy (J)', 'Effective Dopant\nDensity', 'Operating Temperature (K)')
-params2 = tox1, W, L, mu, Ep, N, T
+params2 = tox1, tox2, W, L, mu, Ep, N, T
 
 default_resolution = [1024, 600]
 top_height = 100
@@ -142,7 +143,7 @@ class GUI:
         Vds_step = float(ent1[8])
 
         VtgStepCorrection = 0
-        VbgStepCorrection = 0
+        VbgStepCorrection = 1
         VdsStepCorrection = 1
 
         retDict = self.genSweepModels(vtgModel, vbgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
@@ -197,19 +198,19 @@ class GUI:
 
         # Vbg Model
         if vbgModel == "Linear":
-            dps = VtgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
+            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
             Vbg = list(np.linspace(Vbg_start, Vbg_end, dps))
         elif vbgModel == "Dual-Linear":
-            dps = VtgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
+            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
             # i.e. forwards and backwards sweep
             Vbg = (list(np.linspace(Vbg_start, Vbg_end, dps))
                     + list(np.linspace(Vbg_end, Vbg_step, dps)))
         elif vbgModel == "Logarithmic":
-            dps = VtgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
+            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
             # i.e. forwards and backwards sweep
             Vbg = (list(np.logspace(Vbg_start, Vbg_end, dps))
                     + list(np.linspace(Vbg_end, Vbg_start, dps)))
-            
+        
         # Vds Model
         if vdsModel == "Linear":
             dps = VdsStepCorrection + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
@@ -220,6 +221,7 @@ class GUI:
         elif vdsModel == "Logarithmic":
             dps = VdsStepCorrection + int(abs(round((Vds_start - Vds_end)/Vds_step)))     
             Vds = list(np.logspace(Vds_start, Vds_end, dps))
+
 
         return {"Vtg": Vtg,
                 "Vbg": Vbg,

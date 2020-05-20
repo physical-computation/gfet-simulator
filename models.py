@@ -26,13 +26,13 @@ class RodriguezGFET:
         self.eps = eps
     
     def calculateTransferChars(self):
-        
+        # No back gate in this model, to skip bottom oxide
         tox = float(self.params[0])*10**(-9)
-        W = float(self.params[1])*10**(-6)
-        L = float(self.params[2])*10**(-6)
-        mu = float(self.params[3])
-        Ep = float(self.params[4])
-        N = float(self.params[5])
+        W = float(self.params[2])*10**(-6)
+        L = float(self.params[3])*10**(-6)
+        mu = float(self.params[4])
+        Ep = float(self.params[5])
+        N = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox
@@ -64,7 +64,7 @@ class RodriguezGFET:
         return Ids, gm, fT
 
     def calculateIVChars(self):
-        
+        # No back gate in this model, to skip bottom oxide 
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[1])*10**(-6)
         L = float(self.params[2])*10**(-6)
@@ -135,27 +135,31 @@ class ThieleGFET:
             A = 10**(-3)
             return ((consts.pi*rhosh(Vx))**(0.5+A*Vx**2))/omega
         
-        tox = float(self.params[0])*10**(-9)
-        W = float(self.params[1])*10**(-6)
-        L = float(self.params[2])*10**(-6)
-        mu = float(self.params[3])
-        Ep = float(self.params[4])
-        N = float(self.params[5])
+        tox1 = float(self.params[0])*10**(-9)
+        tox2 = float(self.params[1])*10**(-9)
+        W = float(self.params[2])*10**(-6)
+        L = float(self.params[3])*10**(-6)
+        mu = float(self.params[4])
+        Ep = float(self.params[5])
+        N = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-        Ct = er*consts.epsilon_0/tox
+        Ct = er*consts.epsilon_0/tox1
+        Cb = er*consts.epsilon_0/tox2
         w = (2.24*10**(13))/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
         vF = 10**7 # m/s
         Ctg = Ct*W*L
-        Cbg = Ctg
+        Cbg = Cb*W*L
         Cgd = (Ct*W*L)/2
 
         Rs = 400
         Rd = Rs
 
         omega = w/consts.hbar#(Ep*consts.e)/consts.hbar
-                
+
+        Vbg = self.transVbg[0] # test, assumes one step atm
+
         Ids = []
         gds = []
 
@@ -169,7 +173,8 @@ class ThieleGFET:
                 e = 0.001 # error/Volts
                 Cq, Varr = fixedp(Vch, e, self.N)
 
-                rhosh = lambda Vx: abs(-0.5*Cq*((Vtg-Vx)*(Ctg/Ctg+0.5*Cq)))/consts.e
+                # Eqs 15 and 15 in Thiele paper
+                rhosh = lambda Vx: abs(-0.5*Cq*(((Vtg-Vx)*(Ctg+Cbg+0.5*Cq))+(Vbg-Vx)*(Ctg+Cbg+0.5*Cq)))/consts.e
                 num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
                 den = L - mu*integrate.quad(integrand, 0, Vds, args=(rhosh, omega))[0]
                 
@@ -213,20 +218,24 @@ class ThieleGFET:
         def integrand(x, rho):
             return rhosh(x)**0.5
         
-        tox = float(self.params[0])*10**(-9)
-        W = float(self.params[1])*10**(-6)
-        L = float(self.params[2])*10**(-6)
-        mu = float(self.params[3])
-        Ep = float(self.params[4])
-        N = float(self.params[5])
+        tox1 = float(self.params[0])*10**(-9)
+        tox2 = float(self.params[1])*10**(-9)
+        W = float(self.params[2])*10**(-6)
+        L = float(self.params[3])*10**(-6)
+        mu = float(self.params[4])
+        Ep = float(self.params[5])
+        N = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-        Ctg = er*consts.epsilon_0/tox
+        Ct = er*consts.epsilon_0/tox1
+        Cb = er*consts.epsilon_0/tox2
         w = (2.24*10**(13))/consts.pi
         vF = 10**8 # m/s
+        Ctg = Ct*W*L
+        Cbg = Cb*W*L
         Vg0 = consts.elementary_charge*N/Ctg
         omega = w / consts.hbar
-                
+
         Ids = []
 
         for i in range(len(self.ivVtg)):
@@ -273,15 +282,16 @@ class HuGFET:
     
     def calculateTransferChars(self):
         
-        tox = float(self.params[0])*10**(-9)
-        W = float(self.params[1])*10**(-6)
-        L = float(self.params[2])*10**(-6)
-        mu = float(self.params[3])
-        Ep = float(self.params[4])
-        N = float(self.params[5])
+        tox1 = float(self.params[0])*10**(-9)
+        tox2 = float(self.params[1])*10**(-9)
+        W = float(self.params[2])*10**(-6)
+        L = float(self.params[3])*10**(-6)
+        mu = float(self.params[4])
+        Ep = float(self.params[5])
+        N = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-        Ct = er*consts.epsilon_0/tox
+        Ct = er*consts.epsilon_0/tox1
         w = (2.24*10**(13))/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
         Cgs = Ct*W*L
@@ -354,15 +364,16 @@ class HuGFET:
 
     def calculateIVChars(self):
         
-        tox = float(self.params[0])*10**(-9)
-        W = float(self.params[1])*10**(-6)
-        L = float(self.params[2])*10**(-6)
-        mu = float(self.params[3])
-        Ep = float(self.params[4])
-        N = float(self.params[5])
+        tox1 = float(self.params[0])*10**(-9)
+        tox2 = float(self.params[1])*10**(-9)
+        W = float(self.params[2])*10**(-6)
+        L = float(self.params[3])*10**(-6)
+        mu = float(self.params[4])
+        Ep = float(self.params[5])
+        N = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
-        Ct = er*consts.epsilon_0/tox
+        Ct = er*consts.epsilon_0/tox1
         w = (2.24*10**(13))/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
 

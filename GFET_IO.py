@@ -31,7 +31,7 @@ class GFET_IO:
         for index, Id in enumerate(self.transData["Ids"]): # for each entry in Ids
             column = []
             for datapoint in range(len(self.transData["Ids"][index])): #for each datapoint in that index
-                column.append(str(self.transData["Vgs"][datapoint]) + ','
+                column.append(str(self.transData["Vtg"][datapoint]) + ','
                               + str(self.transData["Ids"][index][datapoint]))
             dataPairs.append(column)
 
@@ -44,7 +44,7 @@ class GFET_IO:
 
         titlerow = []
         for dp in self.transData["Vds"]:
-            row = "Vgs (V):" + "," + "Ids (A):"
+            row = "Vtg (V):" + "," + "Ids (A):"
             titlerow.append(row)
         
         with open(filename + '.csv', 'w') as f:
@@ -75,12 +75,12 @@ class GFET_IO:
         rows = list(zip(*itertools.chain(dataPairs)))
         
         headerRow = []
-        for dp in self.ivData["Vgs"]:
-            row = "Vgs:" + ',' + str(dp)
+        for dp in self.ivData["Vtg"]:
+            row = "Vtg:" + ',' + str(dp)
             headerRow.append(row)
 
         titlerow = []
-        for dp in self.ivData["Vgs"]:
+        for dp in self.ivData["Vtg"]:
             row = "Vds (V):" + "," + "Ids (A):"
             titlerow.append(row)
         
@@ -101,6 +101,6 @@ class GFET_IO:
             
             data = [float(item) for item in content]
 
-            self.transData.update({"Vgs": data})
+            self.transData.update({"Vtg": data})
             self.extSweep = True
             
