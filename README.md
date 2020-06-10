@@ -39,7 +39,7 @@ Features to add:
   facilitate rapid circuit-level simulation
 
 Other general program functionality todo:
-- Input validation & general stability
+- General stability, see where it crashes
 - Aesthetics
 
 References:

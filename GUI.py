@@ -6,6 +6,8 @@ import models as gfet
 import tkinter as tk
 from tkinter import ttk, filedialog
 
+import re
+
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -107,16 +109,26 @@ class GUI:
             data.append(text)
         return data
 
+    # See if the entry can be converted to a float or not. If not, it's not valid input
+    def validate_entry(self, content, newcont):
+        try:
+            float(content)
+            return True
+        except ValueError:
+            return False
+
     def makeform(self, root, fields, params):
         entries = []
+
+        validate = (root.register(self.validate_entry), "%P", '%s')
 
         for index,field in enumerate(fields):
             row = tk.Frame(root)
             lab = tk.Label(row, width=20, text=field, anchor='w')
-
-            ent = tk.Entry(row, bd=1, width=25)
-            ent.insert(0, str(params[index]))
             
+            ent = tk.Entry(row, bd=1, width=25, validate="key", validatecommand=validate)
+            ent.insert(0, str(params[index]))
+
             row.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
             lab.pack(side=tk.LEFT)
             ent.pack(side=tk.RIGHT, expand=tk.YES, fill=tk.X)
@@ -565,12 +577,12 @@ class GUI:
                 
         if current == 0: # Trans sweep
             for index,entry in enumerate(self.ents):
-                entry[1].config(state="normal")
+                entry[1].config(state="normal", validate="key")
                 entry[1].delete(0, len(entry[1].get()))
                 entry[1].insert(0, transSweepParams[index])
         elif current == 1: # IV sweep
             for index,entry in enumerate(self.ents2):
-                entry[1].config(state="normal")
+                entry[1].config(state="normal", validate="key")
                 entry[1].select_range(0, len(self.fetch(entry[1])))
                 entry[1].select_clear()
                 entry[1].insert(0, ivSweepParams[index])
