@@ -94,13 +94,57 @@ class GFET_IO:
             f.close()
 
     def loadSweep(self):
-        f = filedialog.askopenfile(mode='r', filetypes=[('CSV Files', '*.csv')])
+        f = filedialog.askopenfilename(filetypes=[('CSV Files', '*.csv')])
 
-        if f is not None:
-            content = f.read().split('\n')
+        if f is None:
+            return
+        
+        # Get the bias voltage(s) first
+        with open(f, newline='') as csvfile:
+            reader1, reader2 = itertools.tee(csv.reader(csvfile, delimiter=','))
+
+            columns = len(next(reader1))
+            del reader1
+
+            # Set up lists for each variable
+            Vds = []
+            Vtg = []
+
+            # Get biases first. Always second row
+            next(reader2)
+            row1 = next(reader2)
             
-            data = [float(item) for item in content]
+            for column in range(columns):
+                Vds.append(float(row1[column]))
 
-            self.transData.update({"Vtg": data})
+            sweep = False
+            
+            while sweep == False:
+                row1 = next(reader2) # iterate row in csv
+            
+                # if the first number can be converted to a float,
+                # i.e. is a number, not a heading, break loop
+                try: 
+                    float(row1[0])
+                    sweep = True
+                except (ValueError, IndexError) as e:
+                    sweep = False
+
+            # Add first value to sweep. scientifically weird to
+            # change both bias and gate sweep, so assumes only one
+            # set of gate sweep values...
+            Vtg.append(float(row1[0]))
+                
+            # Now get the sweeps. Should be third row onwards
+            for row in reader2:
+                Vtg.append(float(row[0]))
+
+            print("\n Values Extracted: ")
+            print(Vds)
+            print(Vtg)
+        
+            # Finally, update sweep data
+            self.transData.update({"Vds": Vds})
+            self.transData.update({"Vtg": Vtg})
             self.extSweep = True
-            
+                
