@@ -111,6 +111,10 @@ class GUI:
 
     # See if the entry can be converted to a float or not. If not, it's not valid input
     def validate_entry(self, content, newcont):
+        # Allow null entry
+        if content == "":
+            return True
+        
         try:
             float(content)
             return True
@@ -245,12 +249,12 @@ class GUI:
         ivSweep = self.generateIVSweep(ents2, vtgModel, vbgModel, vdsModel)
 
         if self.io.extSweep:
-            transferSweep = self.io.transData
-            subSweep = {"Vds": self.generateTransferSweep(ents, vtgModel, vbgModel, vdsModel)["Vds"]}
-            transferSweep.update(subSweep)
+            transferSweep = {"Vtg": self.io.transData["Vtg"],
+                             "Vds": self.io.transData["Vds"],
+                             "Vbg": self.io.transData["Vbg"]}
         else: 
             transferSweep = self.generateTransferSweep(ents, vtgModel, vbgModel, vdsModel)
-        
+
         self.data.update({"IVChars": ivSweep,
                           "TransChars": transferSweep})
 

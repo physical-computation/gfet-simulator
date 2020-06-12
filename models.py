@@ -30,7 +30,7 @@ class RodriguezGFET:
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[2])*10**(-6)
         L = float(self.params[3])*10**(-6)
-        mu = float(self.params[4])
+        mu = float(self.params[4])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[5])
         N = float(self.params[6])
         
@@ -68,7 +68,7 @@ class RodriguezGFET:
         tox = float(self.params[0])*10**(-9)
         W = float(self.params[1])*10**(-6)
         L = float(self.params[2])*10**(-6)
-        mu = float(self.params[3])
+        mu = float(self.params[3])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[4])
         N = float(self.params[5])
         
@@ -112,9 +112,9 @@ class ThieleGFET:
     
     def calculateTransferChars(self):
 
-        # Cq in terms of Bch
+        # Cq in terms of Vch
         def f(Vch):
-            return Vch*(2*consts.e**3)/(consts.pi*(consts.hbar*vF)**2)
+            return abs(Vch)*(2*consts.e**3)/(consts.pi*(consts.hbar*vF)**2)
 
         def fixedp(x0, tol, N):
             e = 1
@@ -131,24 +131,25 @@ class ThieleGFET:
             return x, xp
 
         # Integral for denominator, can't integrate directly a power of a lambda function!
+        # i.e. 1/vsat
         def integrand(Vx, rho, omega):
             A = 10**(-3)
-            return ((consts.pi*rhosh(Vx))**(0.5+A*Vx**2))/omega
+            return ((consts.pi*rhosh(Vx))**(0.5+A*Vx**2))/omega 
         
         tox1 = float(self.params[0])*10**(-9)
         tox2 = float(self.params[1])*10**(-9)
         W = float(self.params[2])*10**(-6)
         L = float(self.params[3])*10**(-6)
-        mu = float(self.params[4])
+        mu = float(self.params[4])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[5])
         N = float(self.params[6])
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox1
         Cb = er*consts.epsilon_0/tox2
-        w = (2.24*10**(13))/consts.pi
+        w = 2.24*10**(13)#/consts.pi
         Vg0 = consts.elementary_charge*N/Ct
-        vF = 10**7 # m/s
+        vF = 10**8 # m/s
         Ctg = Ct*W*L
         Cbg = Cb*W*L
         Cgd = (Ct*W*L)/2
@@ -156,7 +157,7 @@ class ThieleGFET:
         Rs = 400
         Rd = Rs
 
-        omega = w/consts.hbar#(Ep*consts.e)/consts.hbar
+        omega = w/consts.hbar
 
         Vbg = self.transVbg[0] # test, assumes one step atm
 
@@ -173,10 +174,10 @@ class ThieleGFET:
                 e = 0.001 # error/Volts
                 Cq, Varr = fixedp(Vch, e, self.N)
 
-                # Eqs 15 and 15 in Thiele paper
-                rhosh = lambda Vx: abs(-0.5*Cq*(((Vtg-Vx)*(Ctg+Cbg+0.5*Cq))+(Vbg-Vx)*(Ctg+Cbg+0.5*Cq)))/consts.e
-                num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
-                den = L - mu*integrate.quad(integrand, 0, Vds, args=(rhosh, omega))[0]
+                # Eqs 14 and 15 in Thiele paper
+                rhosh = lambda Vx: abs(-0.5*Cq*((Ct*(Vtg-Vx)+Cb*(Vbg-Vx))/(Ctg+Cbg+0.5*Cq)))/consts.e
+                num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0] # integral returns value and error, just want value
+                den = L - mu*integrate.quad(integrand, 0, Vds, args=(rhosh, omega))[0] # as above
                 
                 Id.append(abs(num/den))
             Ids.append(Id)
@@ -222,7 +223,7 @@ class ThieleGFET:
         tox2 = float(self.params[1])*10**(-9)
         W = float(self.params[2])*10**(-6)
         L = float(self.params[3])*10**(-6)
-        mu = float(self.params[4])
+        mu = float(self.params[4])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[5])
         N = float(self.params[6])
         
@@ -235,7 +236,7 @@ class ThieleGFET:
         Cbg = Cb*W*L
         Vg0 = consts.elementary_charge*N/Ctg
         omega = w / consts.hbar
-
+        Vbg = self.transVbg[0] # test, assumes one step atm
         Ids = []
 
         for i in range(len(self.ivVtg)):
@@ -252,10 +253,12 @@ class ThieleGFET:
                     e = 0.001 # error/Volts
                     Cq, Varr = fixedp(Vch, e, self.N)
                     Vch = (Vtg-Vds)*(Ctg/Ctg+0.5*Cq)
-                    rhosh = lambda x: abs(-0.5*Cq*((Vtg-x)*(Ctg/Ctg+0.5*Cq)))/consts.e
-
+                    rhosh = lambda Vx: abs(-0.5*Cq*((Ct*(Vtg-Vx)+Cb*(Vbg-Vx))/(Ctg+Cbg+0.5*Cq)))/consts.e
                     num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
                     den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
+
+#                    print("Num: " + str(num) + "\tDen: " + str(den))
+                    
                     Id.append(abs(num/den))
             Ids.append(Id)
 
@@ -286,7 +289,7 @@ class HuGFET:
         tox2 = float(self.params[1])*10**(-9)
         W = float(self.params[2])*10**(-6)
         L = float(self.params[3])*10**(-6)
-        mu = float(self.params[4])
+        mu = float(self.params[4])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[5])
         N = float(self.params[6])
         
@@ -368,7 +371,7 @@ class HuGFET:
         tox2 = float(self.params[1])*10**(-9)
         W = float(self.params[2])*10**(-6)
         L = float(self.params[3])*10**(-6)
-        mu = float(self.params[4])
+        mu = float(self.params[4])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[5])
         N = float(self.params[6])
         

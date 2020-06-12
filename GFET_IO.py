@@ -130,6 +130,10 @@ class GFET_IO:
                 except (ValueError, IndexError) as e:
                     sweep = False
 
+            # Vbg, if applicable. Stub for now
+            Vbg = [0.0]
+
+
             # Add first value to sweep. scientifically weird to
             # change both bias and gate sweep, so assumes only one
             # set of gate sweep values...
@@ -139,12 +143,11 @@ class GFET_IO:
             for row in reader2:
                 Vtg.append(float(row[0]))
 
-            print("\n Values Extracted: ")
-            print(Vds)
-            print(Vtg)
-        
             # Finally, update sweep data
-            self.transData.update({"Vds": Vds})
-            self.transData.update({"Vtg": Vtg})
+            self.transData.update({"Vds": Vds,
+                                   "Vtg": Vtg,
+                                   "Vbg": Vbg})
             self.extSweep = True
-                
+
+#    def export_SPICE_model(self, params):
+        
