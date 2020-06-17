@@ -12,7 +12,8 @@ class GFET_IO:
     def __init__(self, *args, **kwargs):
         self.transData = {}
         self.ivData = {}
-        self.extSweep = False
+        self.extTransSweep = False
+        self.extIVSweep = False
 
     # Load Values (dielectric materials etc. from txt file
     def loadDielectrics(self):
@@ -58,6 +59,7 @@ class GFET_IO:
 
     def exportIVChars(self, data):
         filename = filedialog.asksaveasfilename()#mode='w', defaultextension=".csv")
+
         if filename is None:
             return
         
@@ -93,10 +95,13 @@ class GFET_IO:
                 writer.writerow(row)
             f.close()
 
-    def loadSweep(self):
-        f = filedialog.askopenfilename(filetypes=[('CSV Files', '*.csv')])
+    def loadSweep(self, sweepType):
+        try:
+            f = filedialog.askopenfilename(filetypes=[('CSV Files', '*.csv')])
+        except FileNotFoundError:
+            return
 
-        if f is None:
+        if f == '':
             return
         
         # Get the bias voltage(s) first
@@ -113,9 +118,13 @@ class GFET_IO:
             # Get biases first. Always second row
             next(reader2)
             row1 = next(reader2)
-            
-            for column in range(columns):
-                Vds.append(float(row1[column]))
+
+            if sweepType == "Gate":
+                for column in range(columns):
+                    Vds.append(float(row1[column]))
+            elif sweepType == "Drain":            
+                for column in range(columns):
+                    Vtg.append(float(row1[column]))
 
             sweep = False
             
@@ -137,17 +146,30 @@ class GFET_IO:
             # Add first value to sweep. scientifically weird to
             # change both bias and gate sweep, so assumes only one
             # set of gate sweep values...
-            Vtg.append(float(row1[0]))
+            if sweepType == "Gate":
+                Vtg.append(float(row1[0]))
+            elif sweepType == "Drain":
+                Vds.append(float(row1[0]))
                 
             # Now get the sweeps. Should be third row onwards
-            for row in reader2:
-                Vtg.append(float(row[0]))
-
+            if sweepType == "Gate":
+                for row in reader2:
+                    Vtg.append(float(row[0]))
+            elif sweepType == "Drain":                    
+                for row in reader2:
+                    Vds.append(float(row[0]))
+                    
             # Finally, update sweep data
-            self.transData.update({"Vds": Vds,
-                                   "Vtg": Vtg,
-                                   "Vbg": Vbg})
-            self.extSweep = True
+            if sweepType == "Gate":
+                self.extTransSweep = True
+                self.transData.update({"Vds": Vds,
+                                       "Vtg": Vtg,
+                                       "Vbg": Vbg})
+            elif sweepType == "Drain":
+                self.extIVSweep = True
+                self.transData.update({"Vds": Vds,
+                                       "Vtg": Vtg,
+                                       "Vbg": Vbg})
 
     def expTemp(self, biasVoltage, sweepVoltage):
         filename = filedialog.asksaveasfilename() #Maybe Give a default name, but choose location

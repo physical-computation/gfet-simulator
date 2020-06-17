@@ -105,7 +105,7 @@ class GUI:
     def fetch(self, entries):
         data = []
         for entry in entries:
-            text  = entry[1].get()
+            text = entry[1].get()
             data.append(text)
         return data
 
@@ -246,9 +246,14 @@ class GUI:
     def loadModel(self, name, vtgModel, vbgModel, vdsModel, ents, ents2, ents3):
         self.model = name
 
-        ivSweep = self.generateIVSweep(ents2, vtgModel, vbgModel, vdsModel)
+        if self.io.extIVSweep:
+            ivSweep = {"Vtg": self.io.ivData["Vtg"],
+                             "Vds": self.io.ivData["Vds"],
+                             "Vbg": self.io.ivData["Vbg"]}
+        else: 
+            ivSweep = self.generateIVSweep(ents2, vtgModel, vbgModel, vdsModel)
 
-        if self.io.extSweep:
+        if self.io.extTransSweep:
             transferSweep = {"Vtg": self.io.transData["Vtg"],
                              "Vds": self.io.transData["Vds"],
                              "Vbg": self.io.transData["Vbg"]}
@@ -289,11 +294,16 @@ class GUI:
             self.plotConductance(transferSweep["Vtg"], gm)
             self.plotFrequency(transferSweep["Vtg"], fT)            
 
-    def loadSweep(self):
-        self.io.loadSweep()
+    def loadSweep(self, sweepType):
+        self.io.loadSweep(sweepType)
 
-        for entry in self.ents:
-            entry[1].config(state="disabled")
+        if sweepType == "Gate":
+            for entry in self.ents:
+                entry[1].config(state="disabled")
+        elif sweepType == "Drain":
+            for entry in self.ents2:
+                entry[1].config(state="disabled")
+
 
 #**************************************************************************************************#
 #                             Plotting Functions                                                   #
@@ -567,9 +577,9 @@ class GUI:
         b2.menu = tk.Menu(b2)
         b2["menu"] = b2.menu
         b2.menu.add_command(label="Load Transfer Chars Sweep",
-                            command=self.loadSweep)
+                            command=(lambda:self.loadSweep("Gate")))
         b2.menu.add_command(label="Load IV Chars Sweep",
-                    command=self.loadSweep)
+                    command=(lambda:self.loadSweep("Drain")))
         b2.menu.add_command(label="Export Transfer Sweep Template",
                             command=(lambda:self.io.expTemp('Vds:', 'Vtg:')))
         b2.menu.add_command(label="Export IV Sweep Template",
@@ -589,7 +599,11 @@ class GUI:
     # If external sweep loaded, allows normal sweep to be run
     def restoreDefaultSettings(self, notebook):
         current = notebook.index("current")
-        self.io.extSweep = False
+
+        if self.io.extTransSweep:
+            self.io.extTransSweep = False
+        elif self.io.extIVSweep:
+            self.io.extIVSweep = False
                 
         if current == 0: # Trans sweep
             for index,entry in enumerate(self.ents):
@@ -599,6 +613,5 @@ class GUI:
         elif current == 1: # IV sweep
             for index,entry in enumerate(self.ents2):
                 entry[1].config(state="normal", validate="key")
-                entry[1].select_range(0, len(self.fetch(entry[1])))
-                entry[1].select_clear()
+                entry[1].delete(0, len(entry[1].get()))
                 entry[1].insert(0, ivSweepParams[index])
