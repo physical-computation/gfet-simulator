@@ -236,7 +236,7 @@ class ThieleGFET:
         Cbg = Cb*W*L
         Vg0 = consts.elementary_charge*N/Ctg
         omega = w / consts.hbar
-        Vbg = self.transVbg[0] # test, assumes one step atm
+        Vbg = self.transVbg[0] # assumes one step atm
         Ids = []
 
         for i in range(len(self.ivVtg)):
@@ -305,7 +305,7 @@ class HuGFET:
 
         # Update later/add settings, but for now no back gate
         Cb = 0
-        Vb = 0
+        Vbg = self.transVbg[0] # test, assumes one step atm
         Vt0 = 0.8 
         
         K = ((2*consts.elementary_charge**3)/consts.pi)/(consts.hbar*vF)**2
@@ -335,7 +335,7 @@ class HuGFET:
 
                 r = ell/(ell+l)
 
-                Vch = (np.sqrt((Ct+Cb)**2 + 2*K*(Vt*Ct+Vb*Cb)) - (Ct+Cb))/K
+                Vch = (np.sqrt((Ct+Cb)**2 + 2*K*(Vt*Ct+Vbg*Cb)) - (Ct+Cb))/K
 
                 n0 = (K*Vch**2)/(2*consts.elementary_charge) + N
                 
@@ -385,7 +385,7 @@ class HuGFET:
 
         # Update later/add settings, but for now no back gate
         Cb = 0
-        Vb = 0
+        Vbg = self.transVbg[0] # assumes one step atm
         Vt0 = 0.8 
         
         K = ((2*consts.elementary_charge**3)/consts.pi)/(consts.hbar*vF)**2
@@ -402,7 +402,7 @@ class HuGFET:
             Id = []
             Vt = abs(self.ivVtg[i])
 
-            Vch = (np.sqrt((Ct+Cb)**2 + 2*K*(Vt*Ct+Vb*Cb)) - (Ct+Cb))/K
+            Vch = (np.sqrt((Ct+Cb)**2 + 2*K*(Vt*Ct+Vbg*Cb)) - (Ct+Cb))/K
             
             for j in range(len(self.ivVds)):
 

@@ -37,10 +37,11 @@ Features to add:
     -- Include parameters such as temperature to this end
 - Possibly even export a SPICE model of the device tested, helping 
   facilitate rapid circuit-level simulation
+- 'Help' tab/window
 
 Other general program functionality todo:
-- General stability, see where it crashes
-- Aesthetics
+- General stability, see where it crashes (probably add try-except clauses)
+- Aesthetics ('simulation running' label at the bottom, or some sort of popup window that closes when finished, )
 
 References:
 [1] S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design," 

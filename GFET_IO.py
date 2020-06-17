@@ -149,5 +149,23 @@ class GFET_IO:
                                    "Vbg": Vbg})
             self.extSweep = True
 
+    def expTemp(self, biasVoltage, sweepVoltage):
+        filename = filedialog.asksaveasfilename() #Maybe Give a default name, but choose location
+        if filename is None:
+            return
+        
+        # First few rows as an example:        
+        with open(filename + '.csv', 'w') as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
+            writer.writerow([biasVoltage])
+            writer.writerow(["x,x,..."])
+            writer.writerow("")
+            writer.writerow("") # Blank spacer row, for formatting
+            writer.writerow([sweepVoltage])
+            writer.writerow("x")
+            writer.writerow("x")
+            writer.writerow(["..."])
+            f.close()
+            
 #    def export_SPICE_model(self, params):
         

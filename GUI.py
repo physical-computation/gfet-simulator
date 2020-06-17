@@ -562,8 +562,20 @@ class GUI:
                            self.loadModel(self.modelCombo.get(), self.VtgSweepCombo.get(),
                            self.VtgSweepCombo.get(), self.VdsSweepCombo.get(), e, e2, e3)))
         b1.pack(side='left')
-        b2 = tk.Button(top, text='Load Sweep', command=self.loadSweep)
+        
+        b2 = tk.Menubutton(top, text='External Sweeps')
+        b2.menu = tk.Menu(b2)
+        b2["menu"] = b2.menu
+        b2.menu.add_command(label="Load Transfer Chars Sweep",
+                            command=self.loadSweep)
+        b2.menu.add_command(label="Load IV Chars Sweep",
+                    command=self.loadSweep)
+        b2.menu.add_command(label="Export Transfer Sweep Template",
+                            command=(lambda:self.io.expTemp('Vds:', 'Vtg:')))
+        b2.menu.add_command(label="Export IV Sweep Template",
+                            command=(lambda:self.io.expTemp('Vtg:', 'Vds:')))
         b2.pack(side='left')
+        
         b3 = tk.Menubutton(top, text='Export Data')
         b3.menu = tk.Menu(b3)
         b3["menu"] = b3.menu
