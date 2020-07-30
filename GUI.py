@@ -25,18 +25,18 @@ W = 40 # Channel Width, um
 L = 120 # Channel Length, um
 mu = 7000 # Effective carrier mobility
 N = 5e-17 # Dopant density, assume basically zero
-Ep = 5.6e-20 # Surface phonon energy of the substrate
+Ep = 56e-3 # Surface phonon energy of the substrate
 T = 298 # Operating temperature, default is room temp (in Kelvin)
 
 # Default Sweep Settings
-transSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg Start', 'Vbg End', 'Vbg Step', 'Vds Start', 'Vds End', 'Vds Step'
-transSweepParams = -10, 10, 0.2, 0, 0, 1,  0.2, 0.2, 0.1
+transSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg', 'Vds Start', 'Vds End', 'Vds Step'
+transSweepParams = -10, 10, 0.2, 0, 0.2, 0.2, 0.1
 
-ivSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg Start', 'Vbg End', 'Vbg Step', 'Vds Start', 'Vds End', 'Vds Step'
-ivSweepParams = 0, 2, 0.5, 0, 0, 1, 0, 1, 0.01
+ivSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg', 'Vds Start', 'Vds End', 'Vds Step'
+ivSweepParams = 0, 2, 0.5, 0, 0, 1, 0.01
 
 fields2 = ('Top Dielectric\nThickness (nm)', 'Bottom Dielectric\nThickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility (cm2/V/s)',
-            'Phonon Energy (J)', 'Effective Dopant\nDensity', 'Operating Temperature (K)')
+            'Phonon Energy (eV)', 'Effective Dopant\nDensity', 'Operating Temperature (K)')
 params2 = tox1, tox2, W, L, mu, Ep, N, T
 
 default_resolution = [1024, 600]
@@ -49,6 +49,7 @@ class GUI:
         self.root = master
         self.root.geometry(str(default_resolution[0]) + 'x' + str(default_resolution[1]))
         self.root.title('GFET Simulator')
+        self.root.resizable(0,0)
 
         self.io = gio.GFET_IO()
 
@@ -143,59 +144,57 @@ class GUI:
 #                             Model & Sweep Functions                                              #
 #**************************************************************************************************#
 
-    def generateTransferSweep(self, ent, vtgModel, vbgModel, vdsModel):
+    def generateTransferSweep(self, ent, vtgModel, vdsModel):
         ent1 = self.fetch(ent)
 
         Vtg_start = float(ent1[0])
         Vtg_end = float(ent1[1])
         Vtg_step = float(ent1[2])
         
-        Vbg_start = float(ent1[3])
-        Vbg_end = float(ent1[4])
-        Vbg_step = float(ent1[5])
+        Vbg = float(ent1[3])
+#        Vbg_end = float(ent1[4])
+#        Vbg_step = float(ent1[5])
         
-        Vds_start = float(ent1[6])
-        Vds_end = float(ent1[7])
-        Vds_step = float(ent1[8])
+        Vds_start = float(ent1[4])
+        Vds_end = float(ent1[5])
+        Vds_step = float(ent1[6])
 
         VtgStepCorrection = 0
-        VbgStepCorrection = 1
+#        VbgStepCorrection = 1
         VdsStepCorrection = 1
 
-        retDict = self.genSweepModels(vtgModel, vbgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
-                                      Vbg_start, Vbg_end, Vbg_step,
-                                      VtgStepCorrection, VbgStepCorrection, Vds_start, Vds_end,
-                                      Vds_step, VdsStepCorrection) 
+        retDict = self.genSweepModels(vtgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
+                                      Vbg, VtgStepCorrection, Vds_start, Vds_end, Vds_step,
+                                      VdsStepCorrection) 
         return retDict
 
-    def generateIVSweep(self, ent, vtgModel, vbgModel, vdsModel):
+    def generateIVSweep(self, ent, vtgModel, vdsModel):
         ent1 = self.fetch(ent)
 
         Vtg_start = float(ent1[0])
         Vtg_end = float(ent1[1])
         Vtg_step = float(ent1[2])
-        Vbg_start = float(ent1[3])
-        Vbg_end = float(ent1[4])
-        Vbg_step = float(ent1[5])
+        Vbg = float(ent1[3])
+#        Vbg_end = float(ent1[4])
+#        Vbg_step = float(ent1[5])
         
-        Vds_start = float(ent1[6])
-        Vds_end = float(ent1[7])
-        Vds_step = float(ent1[8])
+        Vds_start = float(ent1[4])
+        Vds_end = float(ent1[5])
+        Vds_step = float(ent1[6])
 
         VtgStepCorrection = 1
-        VbgStepCorrection = 0
+#        VbgStepCorrection = 0
         VdsStepCorrection = 0
 
-        retDict = self.genSweepModels(vtgModel, vbgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
-                                      Vbg_start, Vbg_end, Vbg_step,
-                                      VtgStepCorrection, VbgStepCorrection, Vds_start, Vds_end,
-                                      Vds_step, VdsStepCorrection)            
+        retDict = self.genSweepModels(vtgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
+                                      Vbg, VtgStepCorrection, Vds_start,
+                                      Vds_end, Vds_step, VdsStepCorrection)            
         return retDict
 
     # Used by generateTransferSweep and by generateIVSweep
-    def genSweepModels(self, vtgModel, vbgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
-                       Vbg_start, Vbg_end, Vbg_step, VtgStepCorrection, VbgStepCorrection,
-                       Vds_start, Vds_end, Vds_step, VdsStepCorrection):
+    def genSweepModels(self, vtgModel, vdsModel, Vtg_start, Vtg_end, Vtg_step,
+                       Vbg, VtgStepCorrection, Vds_start, Vds_end, Vds_step,
+                       VdsStepCorrection):
 
         # Vtg Model
         if vtgModel == "Linear":
@@ -213,19 +212,19 @@ class GUI:
                     + list(np.linspace(Vtg_end, Vtg_start, dps)))
 
         # Vbg Model
-        if vbgModel == "Linear":
-            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
-            Vbg = list(np.linspace(Vbg_start, Vbg_end, dps))
-        elif vbgModel == "Dual-Linear":
-            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
-            # i.e. forwards and backwards sweep
-            Vbg = (list(np.linspace(Vbg_start, Vbg_end, dps))
-                    + list(np.linspace(Vbg_end, Vbg_step, dps)))
-        elif vbgModel == "Logarithmic":
-            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
-            # i.e. forwards and backwards sweep
-            Vbg = (list(np.logspace(Vbg_start, Vbg_end, dps))
-                    + list(np.linspace(Vbg_end, Vbg_start, dps)))
+##        if vbgModel == "Linear":
+##            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
+##            Vbg = list(np.linspace(Vbg_start, Vbg_end, dps))
+##        elif vbgModel == "Dual-Linear":
+##            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
+##            # i.e. forwards and backwards sweep
+##            Vbg = (list(np.linspace(Vbg_start, Vbg_end, dps))
+##                    + list(np.linspace(Vbg_end, Vbg_step, dps)))
+##        elif vbgModel == "Logarithmic":
+##            dps = VbgStepCorrection + int(abs(Vbg_start/Vbg_step) + abs(Vbg_end/Vbg_step))
+##            # i.e. forwards and backwards sweep
+##            Vbg = (list(np.logspace(Vbg_start, Vbg_end, dps))
+##                    + list(np.linspace(Vbg_end, Vbg_start, dps)))
         
         # Vds Model
         if vdsModel == "Linear":
@@ -243,22 +242,24 @@ class GUI:
                 "Vbg": Vbg,
                 "Vds": Vds}
     
-    def loadModel(self, name, vtgModel, vbgModel, vdsModel, ents, ents2, ents3):
+    def loadModel(self, name, vtgModel, vdsModel, ents, ents2, ents3):
         self.model = name
 
         if self.io.extIVSweep:
             ivSweep = {"Vtg": self.io.ivData["Vtg"],
                              "Vds": self.io.ivData["Vds"],
                              "Vbg": self.io.ivData["Vbg"]}
+
         else: 
-            ivSweep = self.generateIVSweep(ents2, vtgModel, vbgModel, vdsModel)
+            ivSweep = self.generateIVSweep(ents2, vtgModel, vdsModel)
 
         if self.io.extTransSweep:
             transferSweep = {"Vtg": self.io.transData["Vtg"],
                              "Vds": self.io.transData["Vds"],
-                             "Vbg": self.io.transData["Vbg"]}
+#                             "Vbg": self.io.transData["Vbg"]}
+                             "Vbg": self.generateTransferSweep(ents, vtgModel, vdsModel)["Vbg"]}
         else: 
-            transferSweep = self.generateTransferSweep(ents, vtgModel, vbgModel, vdsModel)
+            transferSweep = self.generateTransferSweep(ents, vtgModel, vdsModel)
 
         self.data.update({"IVChars": ivSweep,
                           "TransChars": transferSweep})
@@ -275,17 +276,22 @@ class GUI:
             self.data.update({"gm": gm,
                               "fT": fT})
         elif self.model == 'Thiele':
+#            print("\nExt Trans sweep?: " + str(self.io.extTransSweep) + "\tExt IV Sweep?: " + str(self.io.extIVSweep))
             GFET = gfet.ThieleGFET(params, ivSweep, transferSweep, eps)
             ivChars = GFET.calculateIVChars()
             transferChars, gm, fT = GFET.calculateTransferChars()
             self.data["IVChars"].update({"Ids": ivChars})
             self.data["TransChars"].update({"Ids": transferChars})
+            self.data.update({"gm": gm,
+                              "fT": fT})
         elif self.model == 'Hu':
             GFET = gfet.HuGFET(params, ivSweep, transferSweep, eps)
             transferChars, gm, fT = GFET.calculateTransferChars()
             ivChars = GFET.calculateIVChars()
             self.data["IVChars"].update({"Ids": ivChars})
             self.data["TransChars"].update({"Ids": transferChars})
+            self.data.update({"gm": gm,
+                              "fT": fT})
 
         # Plot data
         if self.model != None:
@@ -299,7 +305,8 @@ class GUI:
 
         if sweepType == "Gate":
             for entry in self.ents:
-                entry[1].config(state="disabled")
+                if entry[0] != "Vbg":
+                    entry[1].config(state="disabled")
         elif sweepType == "Drain":
             for entry in self.ents2:
                 entry[1].config(state="disabled")
@@ -480,12 +487,12 @@ class GUI:
         self.VtgSweepCombo.grid(row=2, column=1)
 
         # Vbg Sweep Settings
-        VbgSweepLabel = tk.Label(top, text='Vbg Sweep Model')
-        self.VbgSweepCombo = ttk.Combobox(top, state='readonly')
-        self.VbgSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
-        self.VbgSweepCombo.current(0) # First value in list is default
-        VbgSweepLabel.grid(row=3, column=0)
-        self.VbgSweepCombo.grid(row=3, column=1)
+##        VbgSweepLabel = tk.Label(top, text='Vbg Sweep Model')
+##        self.VbgSweepCombo = ttk.Combobox(top, state='readonly')
+##        self.VbgSweepCombo['values'] = 'Linear', 'Dual-Linear', 'Logarithmic'
+##        self.VbgSweepCombo.current(0) # First value in list is default
+##        VbgSweepLabel.grid(row=3, column=0)
+##        self.VbgSweepCombo.grid(row=3, column=1)
 
         # Vds Sweep Settings
         VdsSweepLabel = tk.Label(top, text='Vds Sweep Model')
@@ -570,7 +577,7 @@ class GUI:
         b1 = tk.Button(top, text='Simulate',
                   command=(lambda e=self.ents, e2=self.ents2, e3 = self.ents3:
                            self.loadModel(self.modelCombo.get(), self.VtgSweepCombo.get(),
-                           self.VtgSweepCombo.get(), self.VdsSweepCombo.get(), e, e2, e3)))
+                           self.VdsSweepCombo.get(), e, e2, e3)))
         b1.pack(side='left')
         
         b2 = tk.Menubutton(top, text='External Sweeps')
@@ -593,6 +600,10 @@ class GUI:
                             command=(lambda : self.io.exportTransferChars(self.data)))
         b3.menu.add_command(label="Export I-V Characteristics",
                             command=(lambda : self.io.exportIVChars(self.data)))
+        b3.menu.add_command(label="Export Frequency Response",
+                            command=(lambda : self.io.exportFreq(self.data)))
+        b3.menu.add_command(label="Export SPICE Model",
+                            command=(lambda : self.io.exportSPICEModel(self.modelCombo.get(), self.fetch(self.ents3), self.dielecCombo)))
         b3.pack(side='left')
 
 

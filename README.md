@@ -37,10 +37,14 @@ Features to add:
 - Export a SPICE model of the device tested, helping 
   facilitate rapid circuit-level simulation
 - 'Help' tab/window
+- Schematic of device in current model
 
 Other general program functionality todo:
 - General stability, see where it crashes (probably add try-except clauses)
 - Aesthetics ('simulation running' label at the bottom, or some sort of popup window that closes when finished, )
+- Issue with Thiele model transconductance: 
+  -- error when no. of Ids for transfer sweep > Ids for IV. Not consistent gd either, 	              
+     maybe use simpler calculation? Or revisit the paper...
 
 References:
 [1] S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design," 

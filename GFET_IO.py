@@ -1,5 +1,8 @@
 # Module to handle all I/O Functionality of GFET Simulator
 
+# For Physical Constants
+from scipy import constants as consts
+
 import tkinter as tk
 from tkinter import filedialog
 
@@ -95,6 +98,45 @@ class GFET_IO:
                 writer.writerow(row)
             f.close()
 
+    def exportFreq(self, data):
+        filename = filedialog.asksaveasfilename()#mode='w', defaultextension=".csv")
+        if filename is None:
+            return
+    
+        self.transData.update(data["TransChars"])
+        
+        dataPairs = []
+        
+
+        for index, Id in enumerate(self.transData["Ids"]): # for each entry in Ids
+            column = []
+            for datapoint in range(len(self.transData["Ids"][index])): #for each datapoint in that index
+                column.append(str(self.transData["Vtg"][datapoint]) + ','
+                              + str(self.transData["Ids"][index][datapoint]) + ','
+                              + str(data["fT"][index][datapoint]))
+            dataPairs.append(column)
+
+        rows = list(zip(*itertools.chain(dataPairs)))
+
+        headerRow = []
+        for dp in self.transData["Vds"]:
+            row = "Vds:" + ',' + str(dp)
+            headerRow.append(row)
+
+        titlerow = []
+        for dp in self.transData["Vds"]:
+            row = "Vtg (V):" + "," + "Ids (A):" + "," + "fT (Hz)"
+            titlerow.append(row)
+        
+        with open(filename + '.csv', 'w') as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
+            writer.writerow(headerRow)
+            writer.writerow("") # Blank spacer row, for formatting
+            writer.writerow(titlerow)
+            for row in rows:
+                writer.writerow(row)
+            f.close()
+
     def loadSweep(self, sweepType):
         try:
             f = filedialog.askopenfilename(filetypes=[('CSV Files', '*.csv')])
@@ -140,7 +182,7 @@ class GFET_IO:
                     sweep = False
 
             # Vbg, if applicable. Stub for now
-            Vbg = [0.0]
+            Vbg = 0.0
 
 
             # Add first value to sweep. scientifically weird to
@@ -189,5 +231,52 @@ class GFET_IO:
             writer.writerow(["..."])
             f.close()
             
-#    def export_SPICE_model(self, params):
+    def exportSPICEModel(self, model, params, eps):
+        filename = filedialog.asksaveasfilename()
+        if filename is None:
+            return
+
+        # Parse model parameters from variables
+        parameters = []
         
+        parameters.append("+L= " + str(float(params[3])*10**(-6)))
+        parameters.append("+W=" + str(float(params[2])*10**(-6)))
+        parameters.append("+Tox=" + str(float(params[0])*10**(-9)))
+        parameters.append("+er= " + str(eps.get().split("(")[1].replace(")","")))
+        parameters.append("+mu= " + str(float(params[4])*10**(-4))) # cm2/Vs to m2/Vs
+        parameters.append("+omega= " + str(float(params[5])/consts.hbar))
+        parameters.append("+Nf= " + str(float(params[6])))
+
+        # Write constants
+        parameters.append("+e= " + str(consts.elementary_charge))
+        parameters.append("+pi= " + str(consts.pi))
+        parameters.append("+e0= " + str(consts.epsilon_0))
+
+        # Probably will want to make the models a bit more dynamic
+        # in terms of loads, rather than hard-coding
+        if model == "Rodriguez":
+            headerLine = "*                      G  Dc Do S"
+            subcktLine = ".subckt GFET_Rodriguez n1 n2 n3 n4"
+            paramsLine = ".params"
+            modelDef = "B1 n1 n3 I = {abs((mu*W*Ctg*((V(n1)+Vth)-V(n2,n4)/2))/((L/V(n2,n4))+(mu/omega)*sqrt((pi*Ctg)/e)*sqrt((V(n1)+Vth)-V(n2,n4)/2)))}"
+            endsLine = ".ends GFET_Rodriguez"
+                          
+            with open(filename + '.lib', 'w') as f:
+                f.write(headerLine + "\n")
+                f.write(subcktLine + "\n")
+                f.write(paramsLine + "\n")
+
+                # write each parameter
+                for parameter in parameters:
+                    f.write(parameter + "\n")
+
+                # Write calculations
+                f.write("+eox = {er*e0}\n")
+                f.write("+Ctg = {eox/Tox}\n")
+                f.write("+Vth = {e*Nf/Ctg}\n")
+                
+                # Write model definition
+                f.write(modelDef + "\n")
+                f.write(endsLine + "\n")
+                f.close()
+            print("model successfully output")

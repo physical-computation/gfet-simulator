@@ -33,10 +33,9 @@ class RodriguezGFET:
         mu = float(self.params[4])*10**(-4) # cm2/Vs to m2/Vs
         Ep = float(self.params[5])
         N = float(self.params[6])
-        
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox
-        w = (2.24*10**(13))/consts.pi
+        w = Ep/consts.hbar
         Vg0 = consts.elementary_charge*N/Ct
         Cgs = Ct*W*L
         Cgd = (Ct*W*L)/2
@@ -74,7 +73,7 @@ class RodriguezGFET:
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox
-        w = (2.24*10**(13))/consts.pi
+        w = Ep/consts.hbar
         Vg0 = consts.elementary_charge*N/Ct
                 
         Ids = []
@@ -147,7 +146,7 @@ class ThieleGFET:
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox1
         Cb = er*consts.epsilon_0/tox2
-        w = 2.24*10**(13)#/consts.pi
+        w = Ep/consts.hbar
         Vg0 = consts.elementary_charge*N/Ct
         vF = 10**8 # m/s
         Ctg = Ct*W*L
@@ -159,10 +158,9 @@ class ThieleGFET:
 
         omega = w/consts.hbar
 
-        Vbg = self.transVbg[0] # test, assumes one step atm
+        Vbg = self.transVbg # test, assumes one step atm
 
         Ids = []
-        gds = []
 
         for i in range(len(self.transVds)):
             Id = []
@@ -185,13 +183,15 @@ class ThieleGFET:
         # Calculate transconductance & transit frequency
         gm =[]
         fT = []
+
         for index, entry in enumerate(Ids):
             gm.append([abs(i/j) for i, j in zip(entry, self.transVtg)])
-            gd = self.gds[index]
+#            gd = self.gds[index]
             res = []
-            
             for entry in gm:
-                res = [i/(2*consts.pi*((Ctg+Cgd)*(1+gd*(Rs+Rd)+Cgd*i*(Rs+Rd)))) for i in entry]
+#                res = [i/(2*consts.pi*((Ctg+Cgd)*(1+gd*(Rs+Rd)+Cgd*i*(Rs+Rd)))) for i in entry]
+                res = [i/(2*consts.pi*(Ctg+Cgd)) for i in entry] # above calculation has an error, use simple
+                                                                 # for now.
             fT.append(res)
         return Ids, gm, fT
 
@@ -230,13 +230,13 @@ class ThieleGFET:
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox1
         Cb = er*consts.epsilon_0/tox2
-        w = (2.24*10**(13))/consts.pi
+        w = Ep/consts.hbar
         vF = 10**8 # m/s
         Ctg = Ct*W*L
         Cbg = Cb*W*L
         Vg0 = consts.elementary_charge*N/Ctg
         omega = w / consts.hbar
-        Vbg = self.transVbg[0] # assumes one step atm
+        Vbg = self.transVbg # assumes one step atm
         Ids = []
 
         for i in range(len(self.ivVtg)):
@@ -256,9 +256,6 @@ class ThieleGFET:
                     rhosh = lambda Vx: abs(-0.5*Cq*((Ct*(Vtg-Vx)+Cb*(Vbg-Vx))/(Ctg+Cbg+0.5*Cq)))/consts.e
                     num = consts.e*mu*W*integrate.quad(rhosh, 0 ,Vds)[0]
                     den = L - mu*(cmath.sqrt(consts.pi)/omega)*integrate.quad(integrand, 0, Vds, args=(rhosh))[0]
-
-#                    print("Num: " + str(num) + "\tDen: " + str(den))
-                    
                     Id.append(abs(num/den))
             Ids.append(Id)
 
@@ -295,7 +292,7 @@ class HuGFET:
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox1
-        w = (2.24*10**(13))/consts.pi
+        w = Ep/consts.hbar
         Vg0 = consts.elementary_charge*N/Ct
         Cgs = Ct*W*L
         Cgd = (Ct*W*L)/2
@@ -305,7 +302,7 @@ class HuGFET:
 
         # Update later/add settings, but for now no back gate
         Cb = 0
-        Vbg = self.transVbg[0] # test, assumes one step atm
+        Vbg = self.transVbg # test, assumes one step atm
         Vt0 = 0.8 
         
         K = ((2*consts.elementary_charge**3)/consts.pi)/(consts.hbar*vF)**2
@@ -377,7 +374,7 @@ class HuGFET:
         
         er = float(self.eps.get().split("(")[1].replace(")",""))
         Ct = er*consts.epsilon_0/tox1
-        w = (2.24*10**(13))/consts.pi
+        w = Ep/consts.hbar
         Vg0 = consts.elementary_charge*N/Ct
 
         vF = 9.71*10**5 # m/s, from literature, ref 11 in Hu paper
@@ -385,7 +382,7 @@ class HuGFET:
 
         # Update later/add settings, but for now no back gate
         Cb = 0
-        Vbg = self.transVbg[0] # assumes one step atm
+        Vbg = self.transVbg # assumes one step atm
         Vt0 = 0.8 
         
         K = ((2*consts.elementary_charge**3)/consts.pi)/(consts.hbar*vF)**2
