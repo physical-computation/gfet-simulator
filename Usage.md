@@ -17,7 +17,7 @@ When opening the program, you will be presented with the following screen:
 
 The left panel is where all the simulation parameters and control is done.
 
-'GFET Model' allows you to select the particular GFET model you wish to use. 
+'GFET Model' allows you to select the particular GFET model you wish to use. There are some issues with some of the models (see README for more information), however the Jimenez model seems to be the most reliable and accurate so far. We reccommend you use this model for the time being.
 
 ## Device Parameters:
 
