@@ -20,12 +20,13 @@ from scipy import constants as consts
 
 # Default Device Parameters
 tox1 = 50 # TG oxide layer thickness, nm
-tox2 = 50 # BG oxide layer thickness, nm
-W = 40 # Channel Width, um
-L = 120 # Channel Length, um
-mu = 7000 # Effective carrier mobility
+tox2 = 285 # BG oxide layer thickness, nm
+W = 5 # Channel Width, um
+L = 10 # Channel Length, um
+mu = 7500 # Effective carrier mobility
+vF = 1.1*10**6
 N = 5e-17 # Dopant density, assume basically zero
-Ep = 56e-3 # Surface phonon energy of the substrate
+Ep = 100e-3 # Surface phonon energy of the substrate
 T = 298 # Operating temperature, default is room temp (in Kelvin)
 
 # Default Sweep Settings
@@ -35,19 +36,19 @@ transSweepParams = -10, 10, 0.2, 0, 0.2, 0.2, 0.1
 ivSweepFields = 'Vtg Start', 'Vtg End', 'Vtg Step', 'Vbg', 'Vds Start', 'Vds End', 'Vds Step'
 ivSweepParams = 0, 2, 0.5, 0, 0, 1, 0.01
 
-fields2 = ('Top Dielectric\nThickness (nm)', 'Bottom Dielectric\nThickness (nm)', 'Channel Width (um)', 'Channel Length (um)', 'Mobility (cm2/V/s)',
-            'Phonon Energy (eV)', 'Effective Dopant\nDensity', 'Operating Temperature (K)')
-params2 = tox1, tox2, W, L, mu, Ep, N, T
+fields2 = ('Top Dielectric\nThickness (nm)', 'Bottom Dielectric\nThickness (nm)', 'Channel Width (μm)', 'Channel Length (μm)', 'Mobility (cm\u00b2/V/s)',
+            'Fermi Velocity (vF)', 'Phonon Energy (eV)', 'Effective Dopant\nDensity', 'Operating Temperature (K)')
+params2 = tox1, tox2, W, L, mu, vF, Ep, N, T
 
-default_resolution = [1024, 600]
-top_height = 100
-scatter_size = 10
+defaultResolution = [1024, 600]
+topHeight = 100
+scatterSize = 10
 
 class GUI:
 
     def __init__(self, master):
         self.root = master
-        self.root.geometry(str(default_resolution[0]) + 'x' + str(default_resolution[1]))
+        self.root.geometry(str(defaultResolution[0]) + 'x' + str(defaultResolution[1]))
         self.root.title('GFET Simulator')
         self.root.resizable(0,0)
 
@@ -55,11 +56,11 @@ class GUI:
 
         self.data = {}
         
-        top = tk.Frame(self.root, width=default_resolution[0], height=top_height)
-        left = tk.Frame(self.root, width=int(2*default_resolution[0]/5),
-                        height=(default_resolution[1]-top_height))
-        right = tk.Frame(self.root, width=int(3*default_resolution[0]/5),
-                         height=(default_resolution[1]-top_height))
+        top = tk.Frame(self.root, width=defaultResolution[0], height=topHeight)
+        left = tk.Frame(self.root, width=int(2*defaultResolution[0]/5),
+                        height=(defaultResolution[1]-topHeight))
+        right = tk.Frame(self.root, width=int(3*defaultResolution[0]/5),
+                         height=(defaultResolution[1]-topHeight))
 
         top.pack(fill="both")
         left.pack(side="left")
@@ -115,6 +116,10 @@ class GUI:
         # Allow null entry
         if content == "":
             return True
+        elif content == "-":
+            return True
+        elif content == ".":
+            return True
         
         try:
             float(content)
@@ -147,17 +152,43 @@ class GUI:
     def generateTransferSweep(self, ent, vtgModel, vdsModel):
         ent1 = self.fetch(ent)
 
-        Vtg_start = float(ent1[0])
-        Vtg_end = float(ent1[1])
-        Vtg_step = float(ent1[2])
+        try:
+            Vtg_start = float(ent1[0])
+        except ValueError:
+            Vtg_start = 0
+        try:
+            Vtg_end = float(ent1[1])
+        except ValueError:
+            Vtg_end = 0
+        try:
+            Vtg_step = float(ent1[2])
+        except ValueError:
+            Vtg_step = 0
         
-        Vbg = float(ent1[3])
+        # Possible idea to simulate hysteresis, can have as a checkbox option
+        # perhaps in the model definition:
+        # generate a random voltage between, e.g. +1V and -1V and add that
+        # to the Vth or Veff voltage in the model, to simulate the apparently
+        # random variation in dirac point position for dual-linear sweeps.
+        # Alternatively, implement: https://aip.scitation.org/doi/10.1063/1.4913209
+        try:
+            Vbg = float(ent1[3])
+        except ValueError:
+            Vbg = 0
 #        Vbg_end = float(ent1[4])
 #        Vbg_step = float(ent1[5])
-        
-        Vds_start = float(ent1[4])
-        Vds_end = float(ent1[5])
-        Vds_step = float(ent1[6])
+        try:
+            Vds_start = float(ent1[4])
+        except ValueError:
+            Vds_start = 0
+        try:   
+            Vds_end = float(ent1[5])
+        except ValueError:
+            Vds_end = 0
+        try:    
+            Vds_step = float(ent1[6])
+        except ValueError:
+            Vds_step = 0
 
         VtgStepCorrection = 0
 #        VbgStepCorrection = 1
@@ -171,16 +202,37 @@ class GUI:
     def generateIVSweep(self, ent, vtgModel, vdsModel):
         ent1 = self.fetch(ent)
 
-        Vtg_start = float(ent1[0])
-        Vtg_end = float(ent1[1])
-        Vtg_step = float(ent1[2])
-        Vbg = float(ent1[3])
+
+        try:
+            Vtg_start = float(ent1[0])
+        except ValueError:
+            Vtg_start = 0
+        try:
+            Vtg_end = float(ent1[1])
+        except ValueError:
+            Vtg_end = 0
+        try:
+            Vtg_step = float(ent1[2])
+        except ValueError:
+            Vtg_step = 0
+        try:
+            Vbg = float(ent1[3])
+        except ValueError:
+            Vbg = 0
 #        Vbg_end = float(ent1[4])
 #        Vbg_step = float(ent1[5])
-        
-        Vds_start = float(ent1[4])
-        Vds_end = float(ent1[5])
-        Vds_step = float(ent1[6])
+        try:
+            Vds_start = float(ent1[4])
+        except ValueError:
+            Vds_start = 0
+        try:   
+            Vds_end = float(ent1[5])
+        except ValueError:
+            Vds_end = 0
+        try:    
+            Vds_step = float(ent1[6])
+        except ValueError:
+            Vds_step = 0
 
         VtgStepCorrection = 1
 #        VbgStepCorrection = 0
@@ -198,8 +250,13 @@ class GUI:
 
         # Vtg Model
         if vtgModel == "Linear":
-            dps = VtgStepCorrection + int(abs(Vtg_start/Vtg_step) + abs(Vtg_end/Vtg_step))
-            Vtg = list(np.linspace(Vtg_start, Vtg_end, dps))
+            #if just one datapoint
+            if Vtg_start == Vtg_end:
+                dps = 1
+                Vtg = [Vtg_start]
+            else:
+                dps = VtgStepCorrection + int(abs(Vtg_start/Vtg_step) + abs(Vtg_end/Vtg_step))
+                Vtg = list(np.linspace(Vtg_start, Vtg_end, dps))
         elif vtgModel == "Dual-Linear":
             dps = VtgStepCorrection + int(abs(Vtg_start/Vtg_step) + abs(Vtg_end/Vtg_step))
             # i.e. forwards and backwards sweep
@@ -265,10 +322,18 @@ class GUI:
                           "TransChars": transferSweep})
 
         params = self.fetch(ents3)
-        eps = self.dielecCombo
+        eps = [self.dielecCombo1, self.dielecCombo2]
 
         if self.model == 'Rodriguez':
             GFET = gfet.RodriguezGFET(params, ivSweep, transferSweep, eps)
+            transferChars, gm, fT  = GFET.calculateTransferChars()
+            ivChars = GFET.calculateIVChars()
+            self.data["IVChars"].update({"Ids": ivChars})
+            self.data["TransChars"].update({"Ids": transferChars})
+            self.data.update({"gm": gm,
+                              "fT": fT})
+        elif self.model == 'Jimenez':
+            GFET = gfet.JimenezGFET(params, ivSweep, transferSweep, eps)
             transferChars, gm, fT  = GFET.calculateTransferChars()
             ivChars = GFET.calculateIVChars()
             self.data["IVChars"].update({"Ids": ivChars})
@@ -331,7 +396,7 @@ class GUI:
             maxId = 0
             minId = 0
             for index,entry in enumerate(Ids):
-                self.ax.scatter(Vtg, Ids[index], s=scatter_size)
+                self.ax.scatter(Vtg, Ids[index], s=scatterSize)
                 localmax = max(entry)
                 localmin = min(entry)
                 if localmax >= maxId:
@@ -365,7 +430,7 @@ class GUI:
             maxId = 0
             minId = 0
             for index,entry in enumerate(Ids):
-                self.ax2.scatter(Vds, Ids[index], s=scatter_size)
+                self.ax2.scatter(Vds, Ids[index], s=scatterSize)
                 localmax = max(entry)
                 localmin = min(entry)
                 if localmax >= maxId:
@@ -389,7 +454,7 @@ class GUI:
 
         if Vtg:
             for entry in gm:
-                self.ax3.scatter(Vtg, entry, s=scatter_size)
+                self.ax3.scatter(Vtg, entry, s=scatterSize)
                 plotted = True
             
         self.ax3.set_aspect(1./self.ax3.get_data_ratio())
@@ -406,7 +471,7 @@ class GUI:
 
         if Vtg:
             for entry in fT:
-                self.ax4.scatter(Vtg, entry, s=scatter_size)
+                self.ax4.scatter(Vtg, entry, s=scatterSize)
                 plotted = True
             
         self.ax4.set_aspect(1./self.ax4.get_data_ratio())
@@ -471,7 +536,7 @@ class GUI:
         # Setup Model Selection Box
         modelLabel = tk.Label(top, text='GFET Model')
         self.modelCombo = ttk.Combobox(top, state='readonly')
-        self.modelCombo['values'] = 'Rodriguez', 'Thiele', 'Hu'
+        self.modelCombo['values'] = 'Rodriguez', 'Jimenez', 'Thiele', 'Hu'
         self.modelCombo.current(0) # First value in list is default
         modelLabel.grid(row=0, column=0)
         self.modelCombo.grid(row=0, column=1)
@@ -548,9 +613,13 @@ class GUI:
 
     # Setup the device parameters tab
     def setupParamsTab(self):        
-        frame = tk.Frame(self.ltab2)
-        dielecLabel = tk.Label(frame, text='Relative Permittivity')
-        self.dielecCombo = ttk.Combobox(frame, state='readonly')
+        frame1 = tk.Frame(self.ltab2)
+        frame2 = tk.Frame(self.ltab2)
+        dielecLabel1 = tk.Label(frame1, text='Top Dielectric Ɛr')
+        self.dielecCombo1 = ttk.Combobox(frame1, state='readonly')
+        
+        dielecLabel2 = tk.Label(frame2, text='Bottom Dielectric Ɛr')
+        self.dielecCombo2 = ttk.Combobox(frame2, state='readonly')
 
         dielecs = self.io.loadDielectrics()
         
@@ -559,13 +628,19 @@ class GUI:
         for i in range(len(dielecs)):
             vals.append(dielecs[i][0] + " (" + str(dielecs[i][1]) + ")")
 
-        self.dielecCombo['values'] = vals
-        self.dielecCombo.current(0) # First value in list is default
+        self.dielecCombo1['values'] = vals
+        self.dielecCombo1.current(1) # First value in list is default
+
+        self.dielecCombo2['values'] = vals
+        self.dielecCombo2.current(0) # First value in list is default
         
         self.root.bind("<<ComboboxSelected>>")
-        frame.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
-        dielecLabel.pack(side=tk.LEFT)
-        self.dielecCombo.pack(side=tk.RIGHT)
+        frame1.pack(side=tk.TOP, fill=tk.X, padx=5, pady=5)
+        frame2.pack(fill=tk.X, padx=5, pady=5)
+        dielecLabel1.pack(side=tk.LEFT)
+        self.dielecCombo1.pack(side=tk.RIGHT)
+        dielecLabel2.pack(side=tk.LEFT)
+        self.dielecCombo2.pack(side=tk.RIGHT)
 
         subFrame = tk.Frame()
         
@@ -603,7 +678,7 @@ class GUI:
         b3.menu.add_command(label="Export Frequency Response",
                             command=(lambda : self.io.exportFreq(self.data)))
         b3.menu.add_command(label="Export SPICE Model",
-                            command=(lambda : self.io.exportSPICEModel(self.modelCombo.get(), self.fetch(self.ents3), self.dielecCombo)))
+                            command=(lambda : self.io.exportSPICEModel(self.modelCombo.get(), self.fetch(self.ents3), self.dielecCombo1, self.dielecCombo2)))
         b3.pack(side='left')
 
 

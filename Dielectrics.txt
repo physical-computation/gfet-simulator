@@ -1,4 +1,5 @@
 Material,Relative Permittivity
 SiO2,3.9
-Al2O3,9.8
-HfO2,15.6
+Al2O3,9.1
+HfO2,23
+1L h-BN, 2.31
