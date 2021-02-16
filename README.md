@@ -10,6 +10,8 @@ This program is designed as a tool allowing people to play around with different
 e.g. channel dimensions, oxide thickness, operating temperature, and to test these devices under a range
 of bias conditions. Currently, Rodriguez et al. [1], Jimenez [2], Thiele et al. [3] and Hu et al.'s [4] models have been implemented.
 
+Please see Usage.md for a detailed guide on use of the software.
+
 ## Dependencies:
 This tool is written in Python 3.9 and depends on several non-inbuilt libraries for correct operation. Please make sure you have the following installed before use:
 
