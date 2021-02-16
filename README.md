@@ -54,9 +54,9 @@ differences in existing GFET models, and instead be able to delve straight in an
 * Issue with Thiele model transconductance: 
   * error when no. of Ids for transfer sweep > Ids for IV. Not consistent gd either,                   
      maybe use simpler calculation?
-* Transfer characteristic shapes of Rodriguez, Thiele and potentiall Hu models:
- * Mobility conversion from cm2/vs to m2/vs (i.e. multiplication by 10E-4) makes the shape less realistic, however the expected change in order of magnitude when changing mobility parameter happens - need to figure this out.
-* Hu model reports overflow in the exponential when calculating drain current. Not serious but probably should be fixed
+* Transfer characteristic shapes of Rodriguez, Thiele and potentially Hu models:
+  * Mobility conversion from cm2/vs to m2/vs (i.e. multiplication by 10E-4) makes the shape less realistic, however the expected change in order of magnitude when changing mobility parameter happens - need to figure this out.
+* Hu model reports overflow in the exponential when calculating drain current. Not serious but probably should be fixed.
      
 ## References:
 [1] S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design," 
