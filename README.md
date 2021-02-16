@@ -10,6 +10,13 @@ This program is designed as a tool allowing people to play around with different
 e.g. channel dimensions, oxide thickness, operating temperature, and to test these devices under a range
 of bias conditions. Currently, Rodriguez et al. [1], Jimenez [2], Thiele et al. [3] and Hu et al.'s [4] models have been implemented.
 
+## Dependencies:
+This tool is written in Python 3.9 and depends on several non-inbuilt libraries for correct operation. Please make sure you have the following installed before use:
+
+* NuPy (https://numpy.org/)
+* SciPy (https://www.scipy.org/)
+* Tkinter (Included with Python 3.7+)
+
 ## Motivation:
 GFETs are being used in the research of several people in the group, and potentially by new students as well,
 but they aren't off the shelf components, and can take hours to make. As they are also very sensitive devices,
