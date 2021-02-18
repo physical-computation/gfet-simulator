@@ -17,6 +17,7 @@ This tool is written in Python 3.9 and depends on several non-inbuilt libraries 
 
 * NuPy (https://numpy.org/)
 * SciPy (https://www.scipy.org/)
+* MatPlotLib (https://matplotlib.org/stable/index.html)
 * Tkinter (Included with Python 3.7+)
 
 ## Motivation:
