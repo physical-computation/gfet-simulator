@@ -101,6 +101,4 @@ When you are are happy with the device characteristics, you can export a .csv fi
 'Export Spice Model'
 This allows you to export a .lib file which you can import into your SPICE simulator software of choice (e.g. PSpice, LTSpice, HSpice) for use in circuit-level simulations. These SPICE files will contain all the specified parameters of the simulated device, as well as the relevant equations describing device behaviour. These are implemented in SPICE as an arbitrary behavioural current source (B Source). To use these models in LTSpice, open the .lib file in LTspice, place your cursor on the top line (i.e. the line which reads '.subckt GFET_[model name]...') and click 'Create Symbol' .
 
-At present, only the Rodriguez and Jimenez models are both SPICE-compatible, so SPICE models of the Thiele and Hu models cannot be exported.
-
 N.B.: exported SPICE models have only been developed for and tested with LTSpice at the time of writing, so may require adaptation for other software.

@@ -1,7 +1,5 @@
-# Main file for GFET Simulator
-
+# Main file for GFET Lab
 import GUI as gui
-
 import tkinter as tk
 
 def main():

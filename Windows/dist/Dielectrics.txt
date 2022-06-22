@@ -1,0 +1,10 @@
+Material,Relative Permittivity,Phonon Energy
+SiO2,3.9,59.98
+SiC,9.7,116
+Al2O3,12.53,55.01
+AlN,9.14,83.60
+HfO2,22.0,19.42
+ZrO2,24.0,25.02
+h-BN,5.09,101.6
+Air,1,0
+None,1,0

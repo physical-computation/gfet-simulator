@@ -5,10 +5,14 @@ from scipy import constants as consts
 
 import tkinter as tk
 from tkinter import filedialog
+from tkinter import messagebox
+import os
+import sys
 
 import numpy as np
 import itertools
 import csv
+import re
 
 class GFET_IO:
 
@@ -18,18 +22,41 @@ class GFET_IO:
         self.extTransSweep = False
         self.extIVSweep = False
 
+#    def resource_path(self, relative):
+#        return os.path.join(
+#            os.environ.get(
+#                sys._MEIPASS,
+#                os.path.abspath(".")
+#            ),
+#            relative
+#        )
+    def resource_path(self, relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
+
     # Load Values (dielectric materials etc. from txt file
-    def loadDielectrics(self):
-        dielectrics = np.loadtxt('Dielectrics.txt', dtype=np.dtype('O'), delimiter=',', skiprows=1)
-        return dielectrics
+    def loadDielectrics(self, root):
+
+        filename = self.resource_path(os.path.dirname(os.path.abspath(__file__))) + "/Dielectrics.txt"
+        try:
+            dielectrics = np.loadtxt(filename, dtype=np.dtype('O'), delimiter=',', skiprows=1)
+            return dielectrics
+        except:
+            messagebox.showerror("File Error", "Error: Dielectrics.txt not found. Quitting...")
+            root.destroy()
+            sys.exit(1)
+
 
     def exportTransferChars(self, data):
         filename = filedialog.asksaveasfilename()#mode='w', defaultextension=".csv")
         if filename is None:
             return
-    
+
         self.transData.update(data["TransChars"])
-        
+
         dataPairs = []
 
         for index, Id in enumerate(self.transData["Ids"]): # for each entry in Ids
@@ -50,7 +77,7 @@ class GFET_IO:
         for dp in self.transData["Vds"]:
             row = "Vtg (V):" + "," + "Ids (A):"
             titlerow.append(row)
-        
+
         with open(filename + '.csv', 'w') as f:
             writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
             writer.writerow(headerRow)
@@ -65,9 +92,9 @@ class GFET_IO:
 
         if filename is None:
             return
-        
+
         self.ivData.update(data["IVChars"])
-        
+
         dataPairs = []
 
         for index, Id in enumerate(self.ivData["Ids"]): # for each entry in Ids
@@ -78,7 +105,7 @@ class GFET_IO:
             dataPairs.append(column)
 
         rows = list(zip(*itertools.chain(dataPairs)))
-        
+
         headerRow = []
         for dp in self.ivData["Vtg"]:
             row = "Vtg:" + ',' + str(dp)
@@ -88,7 +115,7 @@ class GFET_IO:
         for dp in self.ivData["Vtg"]:
             row = "Vds (V):" + "," + "Ids (A):"
             titlerow.append(row)
-        
+
         with open(filename + '.csv', 'w') as f:
             writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
             writer.writerow(headerRow)
@@ -102,11 +129,11 @@ class GFET_IO:
         filename = filedialog.asksaveasfilename()#mode='w', defaultextension=".csv")
         if filename is None:
             return
-    
+
         self.transData.update(data["TransChars"])
-        
+
         dataPairs = []
-        
+
 
         for index, Id in enumerate(self.transData["Ids"]): # for each entry in Ids
             column = []
@@ -127,7 +154,7 @@ class GFET_IO:
         for dp in self.transData["Vds"]:
             row = "Vtg (V):" + "," + "Ids (A):" + "," + "fT (Hz)"
             titlerow.append(row)
-        
+
         with open(filename + '.csv', 'w') as f:
             writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
             writer.writerow(headerRow)
@@ -145,7 +172,7 @@ class GFET_IO:
 
         if f == '':
             return
-        
+
         # Get the bias voltage(s) first
         with open(f, newline='') as csvfile:
             reader1, reader2 = itertools.tee(csv.reader(csvfile, delimiter=','))
@@ -164,18 +191,18 @@ class GFET_IO:
             if sweepType == "Gate":
                 for column in range(columns):
                     Vds.append(float(row1[column]))
-            elif sweepType == "Drain":            
+            elif sweepType == "Drain":
                 for column in range(columns):
                     Vtg.append(float(row1[column]))
 
             sweep = False
-            
+
             while sweep == False:
                 row1 = next(reader2) # iterate row in csv
-            
+
                 # if the first number can be converted to a float,
                 # i.e. is a number, not a heading, break loop
-                try: 
+                try:
                     float(row1[0])
                     sweep = True
                 except (ValueError, IndexError) as e:
@@ -192,15 +219,15 @@ class GFET_IO:
                 Vtg.append(float(row1[0]))
             elif sweepType == "Drain":
                 Vds.append(float(row1[0]))
-                
+
             # Now get the sweeps. Should be third row onwards
             if sweepType == "Gate":
                 for row in reader2:
                     Vtg.append(float(row[0]))
-            elif sweepType == "Drain":                    
+            elif sweepType == "Drain":
                 for row in reader2:
                     Vds.append(float(row[0]))
-                    
+
             # Finally, update sweep data
             if sweepType == "Gate":
                 self.extTransSweep = True
@@ -217,8 +244,8 @@ class GFET_IO:
         filename = filedialog.asksaveasfilename() #Maybe Give a default name, but choose location
         if filename is None:
             return
-        
-        # First few rows as an example:        
+
+        # First few rows as an example:
         with open(filename + '.csv', 'w') as f:
             writer = csv.writer(f, quoting=csv.QUOTE_NONE, escapechar=" ")
             writer.writerow([biasVoltage])
@@ -230,7 +257,7 @@ class GFET_IO:
             writer.writerow("x")
             writer.writerow(["..."])
             f.close()
-            
+
     def exportSPICEModel(self, model, params, eps1, eps2):
         if model == "Rodriguez":
             filename = filedialog.asksaveasfilename()
@@ -239,7 +266,7 @@ class GFET_IO:
 
             # Parse model parameters from variables
             parameters = []
-            
+
             parameters.append("+L= " + str(float(params[3])*10**(-6)))
             parameters.append("+W=" + str(float(params[2])*10**(-6)))
             parameters.append("+Tox=" + str(float(params[0])*10**(-9)))
@@ -250,13 +277,13 @@ class GFET_IO:
 
             # Probably will want to make the models a bit more dynamic
             # in terms of loads, rather than hard-coding
-            
+
             headerLine = "*                      G  D  S"
             subcktLine = ".subckt GFET_Rodriguez n1 n2 n3"
             paramsLine = ".params"
             modelDef = "BI n1 n2 I = abs((mu*W*Ctg*((V(n1)+Vth-V(n2)/2)))/((L/V(n2))+(mu/omega)*sqrt((pi*Ctg)/echarge)*sqrt(abs(V(n1)+Vth-V(n2)/2))))"
             endsLine = ".ends GFET_Rodriguez"
-                          
+
             with open(filename + '.lib', 'w') as f:
                 f.write(headerLine + "\n")
                 f.write(subcktLine + "\n")
@@ -269,13 +296,13 @@ class GFET_IO:
                 # Write constants
                 f.write("+e0 = 8.854e-12\n")
                 f.write("+pi = 3.141\n")
-                
+
                 # Write calculations
                 f.write("+eox = {er*e0}\n")
                 f.write("+Ctg = {eox/Tox}\n")
                 f.write("+Vth = {(echarge*Nf)/Ctg}\n")
                 f.write("+omega={hw/(2*pi*planck)}\n")
-                
+
                 # Write model definition
                 f.write(modelDef + "\n")
                 f.write(endsLine + "\n")
@@ -288,26 +315,27 @@ class GFET_IO:
 
             # Parse model parameters from variables
             parameters = []
-            
-            parameters.append("+L= " + str(float(params[3])*10**(-6)))
-            parameters.append("+W=" + str(float(params[2])*10**(-6)))
+
             parameters.append("+Tox1=" + str(float(params[0])*10**(-9)))
             parameters.append("+Tox2=" + str(float(params[1])*10**(-9)))
-            parameters.append("+er1= " + str(eps1.get().split("(")[1].replace(")","")))
-            parameters.append("+er2= " + str(eps1.get().split("(")[1].replace(")","")))
-            parameters.append("+mu= " + str(float(params[4]))) # cm2/Vs to m2/Vs
-            parameters.append("+hw= {" + str((float(params[5]))) + "*echarge}")
-            parameters.append("+Nf= " + str(float(params[6])))
+            parameters.append("+W= " + str(float(params[2])*10**(-6)))
+            parameters.append("+L=" + str(float(params[3])*10**(-6)))
+            parameters.append("+hw=" + str(float(re.search('(Ɛr=(.*), ħω=(.*))', eps1.get()).group(3)[:-5])*10**(-3)*consts.e))
+            parameters.append("+er1= " + str(re.search('(Ɛr=(.*), ħω=(.*))', eps1.get()).group(2)))
+            parameters.append("+er2= " + str(re.search('(Ɛr=(.*), ħω=(.*))', eps2.get()).group(2)))
+            parameters.append("+mun= " + str(float(params[4])*10**(-4))) # cm2/Vs to m2/Vs
+            parameters.append("+mup= " + str(float(params[5])*10**(-4)))
+            parameters.append("+vF= " + str(float(params[6])))
+            parameters.append("+Nf= " + str(float(params[7])))
 
             # Probably will want to make the models a bit more dynamic
             # in terms of loads, rather than hard-coding
-            
-            headerLine = "*                    G  D  S"
-            subcktLine = ".subckt GFET_Jimenez n1 n2 n3"
+            headerLine = "*                    TG D  S  BG"
+            subcktLine = ".subckt GFET_Jimenez n1 n2 n3 n4"
             paramsLine = ".params"
-            modelDef = "BI n1 n2 I = ((mu*k)/2)*(W/Leff(V(n2)))*(g1(V(n1),V(n2))-g2(V(n1)))"
+            modelDef = "BI n1 n2 I = ((muAv*k)/2)*(W/leff(V(n1),V(n2),V(n4)))*(g(Vcd(V(n1),V(n2),V(n4)))-g(Vcs(V(n1),V(n4))))"
             endsLine = ".ends GFET_Jimenez"
-                          
+
             with open(filename + '.lib', 'w') as f:
                 f.write(headerLine + "\n")
                 f.write(subcktLine + "\n")
@@ -317,12 +345,8 @@ class GFET_IO:
                 for parameter in parameters:
                     f.write(parameter + "\n")
 
-                f.write("+vF=1e6\n")
                 f.write("+e0=8.854e-12\n")
-                f.write("+Vbg=0.0\n")
-                f.write("+Vg0=0.85\n")
-                f.write("+Vb0=0\n")
-                
+
                 # Write calculations
                 f.write("+hbar={planck/(2*pi)}\n")
                 f.write("+omega={hw/hbar}\n")
@@ -330,15 +354,23 @@ class GFET_IO:
                 f.write("+eox2={er2*e0}\n")
                 f.write("+Ct={eox1/Tox1}\n")
                 f.write("+Cb={eox2/Tox2}\n")
+                f.write("+Vg0={(echarge*Nf)/Ct}\n")
+                f.write("+Vb0={(echarge*Nf)/Cb}\n")
                 f.write("+k={((2*(echarge**2))/pi)*(echarge/((hbar*vF)**2))}\n")
+                f.write("+beta={(echarge**3)/(pi*((hbar*vF)**2))}\n")
+                f.write("+delta={54*10**(-3)*echarge}\n")
+                f.write("+npud={(delta**2)/(pi*((hbar*vF)**2))}\n")
+                f.write("+alpha={mun/mup}\n")
+                f.write("+muAv={(mun+mup)/2}\n\n")
 
                 # Write functions
-                f.write(".func Leff(vds) {L+mu*(abs(vds)/vF)}\n")
-                f.write(".func Vcd(v,vds) {if((((v-Vg0-vds)*Ct+(Vbg-Vb0-vds)*Cb) > 0), ((-(Ct+Cb)+sqrt(((Ct+Cb)**2)+2*k*((v-Vg0-vds)*Ct+(Vbg-Vb0-vds)*Cb)))/(k)), ((-(Ct+Cb)+sqrt(((Ct+Cb)**2)-2*k*((v-Vg0-vds)*Ct+(Vbg-Vb0-vds)*Cb)))/(-k)))}\n")
-                f.write(".func Vcs(v) {if((((v-Vg0)*Ct+(Vbg-Vb0)*Cb) > 0), ((-(Ct+Cb)+sqrt(((Ct+Cb)**2)+2*k*((v-Vg0)*Ct+(Vbg-Vb0)*Cb)))/(k)), ((-(Ct+Cb)+sqrt(((Ct+Cb)**2)-2*k*((v-Vg0)*Ct+(Vbg-Vb0)*Cb)))/(-k)))}\n")
-                f.write(".func g1(v,vds) {(-(Vcd(v,vds)**3)/3)-sgn(Vcd(v,vds))*((k*(Vcd(v,vds)**4))/(4*(Ct+Cb)))}\n")
-                f.write(".func g2(v) {(-(Vcs(v)**3)/3)-sgn(Vcs(v))*((k*(Vcs(v)**4))/(4*(Ct+Cb)))}\n")
-                        
+                f.write(".func Qnet(v,vds,vbg) {beta*(Vcd(v,vds,vbg)-Vcs(v,vbg))*abs((Vcd(v,vds,vbg)-Vcs(v,vbg)))}\n")
+                f.write(".func vsat(v,vds,vbg) {omega/sqrt(((pi*abs(Qnet(v,vds,vbg)))/echarge)+npud/2)}\n")
+                f.write(".func leff(v,vds,vbg) {L+muAv*(abs(vds)/vsat(v,vds,vbg))}\n")
+                f.write(".func Vcd(v,vds,vbg) {if(((v-Vg0-vds)*Ct+(vbg-Vb0-vds)*Cb) > 0, alpha*(-(Ct+Cb)+sqrt(((Ct+Cb)**2)+2*k*((v-Vg0-vds)*Ct+(vbg-Vb0-vds)*Cb)))/(k), (-(Ct+Cb)+sqrt(((Ct+Cb)**2)-2*k*((v-Vg0-vds)*Ct+(vbg-Vb0-vds)*Cb)))/(-k))}\n")
+                f.write(".func Vcs(v,vbg) {if((((v-Vg0)*Ct+(vbg-Vb0)*Cb) > 0), alpha*((-(Ct+Cb)+sqrt(((Ct+Cb)**2)+2*k*((v-Vg0)*Ct+(vbg-Vb0)*Cb)))/(k)), ((-(Ct+Cb)+sqrt(((Ct+Cb)**2)-2*k*((v-Vg0)*Ct+(vbg-Vb0)*Cb)))/(-k)))}\n")
+                f.write(".func g(vc) {(-(vc**3)/3)-sgn(vc)*((k*(vc**4))/4*(Ct+Cb))}\n")
+
                 # Write model definition
                 f.write(modelDef + "\n")
                 f.write(endsLine + "\n")

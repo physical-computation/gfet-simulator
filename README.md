@@ -3,17 +3,17 @@
 
 Author: Nathaniel Tye (njt48@cam.ac.uk)
 Date: 01.05.2020
-Updated: 16.02.2021
+Updated: 22.06.2022
 
 ## Purpose:
-This program is designed as a tool allowing people to play around with different parameters of GFETs,
+This program is designed as a tool allowing people to experiment with different graphene field-effect transistor (GFET) parameters,
 e.g. channel dimensions, oxide thickness, operating temperature, and to test these devices under a range
-of bias conditions. Currently, Rodriguez et al. [1], Jimenez [2], Thiele et al. [3] and Hu et al.'s [4] models have been implemented.
+of bias conditions. We have implemented Jimenez's model [1], but we encourage community integration of other models.
 
 Please see Usage.md for a detailed guide on use of the software.
 
 ## Dependencies:
-This tool is written in Python 3.9 and depends on several non-inbuilt libraries for correct operation. Please make sure you have the following installed before use:
+This tool is written in Python 3.9 and depends on several external libraries for correct operation. Please make sure you have the following installed before use:
 
 * NuPy (https://numpy.org/)
 * SciPy (https://www.scipy.org/)
@@ -54,20 +54,10 @@ differences in existing GFET models, and instead be able to delve straight in an
 
 
 ## Known Issues:
-* Issue with Thiele model transconductance: 
-  * error when no. of Ids for transfer sweep > Ids for IV. Not consistent gd either,                   
-     maybe use simpler calculation?
-* Transfer characteristic shapes of Rodriguez, Thiele and potentially Hu models:
-  * Mobility conversion from cm2/vs to m2/vs (i.e. multiplication by 10E-4) makes the shape less realistic, however the expected change in order of magnitude when changing mobility parameter happens - need to figure this out.
-* Hu model reports overflow in the exponential when calculating drain current. Not serious but probably should be fixed.
+* Transconducatance and frequency calculations are incorrect
+* Mukherjee's model [2] does not currently work, but is instead a placeholder.
      
 ## References:
-[1] S. Rodriguez et al., "A Comprehensive Graphene FET Model for Circuit Design," 
-    in IEEE Transactions on Electron Devices, vol. 61, no. 4, pp. 1199-1206, April 2014. (https://doi.org/10.1109/TED.2014.2302372)
+[1] D. Jimenez, "Explicit Drain Current, Charge and Capacitance Model of Graphene Field-Effect Transistors," in IEEE Transactions on Electron Devices, vol. 58, no. 12, pp. 4377-4383, Dec. 2011, (https://doi.org/10.1109/TED.2011.2168960)
 
-[2] D. Jimenez, "Explicit Drain Current, Charge and Capacitance Model of Graphene Field-Effect Transistors," in IEEE Transactions on Electron Devices, vol. 58, no. 12, pp. 4377-4383, Dec. 2011, (https://doi.org/10.1109/TED.2011.2168960)
-
-[3] S. A. Thiele, J. A. Schaefer, and F. Schwierz, "Modeling of graphene metal-oxide-semiconductor field-effect transistors with gapless large-area graphene channels," in 
-Journal of Applied Physics, vol. 107, no. 9, 2010. (https://doi.org/10.1063/1.3357398)
-
-[4] G. Hu, S. Hu, R. Liu, L. Wang, X. Zhou and T. Tang, "Quasi-Ballistic Transport Model for Graphene Field-Effect Transistor," in IEEE Transactions on Electron Devices, vol. 60, no. 7, pp. 2410-2414, July 2013, (https://doi.org/10.1109/TED.2013.2264094)
+[3] C. Mukherjee, J. Aguirre-Morales, S. Frégonèse, T. Zimmer and C. Maneux, "Versatile Compact Model for Graphene FET Targeting Reliability-Aware Circuit Design," in IEEE Transactions on Electron Devices, vol. 62, no. 3, pp. 757-763, March 2015, doi: 10.1109/TED.2015.2395134.
