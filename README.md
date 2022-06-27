@@ -1,5 +1,5 @@
-# gfet-simulator
-## Python Program to Model GFET Characteristics
+# GFET Lab
+## A Python Program to Model GFET Characteristics
 
 Author: Nathaniel Tye (njt48@cam.ac.uk)
 Date: 01.05.2020
@@ -19,6 +19,8 @@ This tool is written in Python 3.9 and depends on several external libraries for
 * SciPy (https://www.scipy.org/)
 * MatPlotLib (https://matplotlib.org/stable/index.html)
 * Tkinter (Included with Python 3.7+)
+
+Prebuilt executables for Mac and Windows are available in the respective folders. Note that the Windows version requires "Dielectrics.txt" to be located in the same directory.
 
 ## Motivation:
 GFETs are being used in the research of several people in the group, and potentially by new students as well,
@@ -41,15 +43,15 @@ differences in existing GFET models, and instead be able to delve straight in an
   (Currently defaults back-gate voltages to 0 V for external sweeps.)
 * Can export SPICE models
 
-## Features to add:
+## Features to Add:
 * Additional models (e.g. multi-gate), alternative materials (e.g. MoS2)...
 * Include model parameters and other information in exported CSV files
 * Plot additional characteristics (e.g. conductivity, capacitance...)
 * 'Help' tab/window
 * Schematic of device in current model
 
-## Other general program functionality todo:
-* General stability, see where it crashes (probably add try-except clauses)
+## Other Functionality to Implement:
+* Ensure stability
 * Aesthetics ('simulation running' label at the bottom, or some sort of popup window that closes when finished)
 
 ## Known Issues:
