@@ -4,12 +4,13 @@
 
 *Author: Nathaniel Tye (njt48@cam.ac.uk)*
 *Date: 16.02.2021*
+*Updaed: 27.06.2022*
 
 ## Getting Started:
 
 N.B.: Before starting, please see the README to familiarise yourself with the purpose of this tool and make sure any dependencies are include, and also to see any known issues and/or planned improvements.
 
-To run the program, simply open the 'main.py file.
+To run the program, either open the 'main.py file, or the executable file for your operating system. The macOS folder contains an executable for Macintosh computers, and the Windows folder contains an executable for Windows computers. N.B.: For Windows, the "Dielectrics.txt" file must be in the same directory as the executable
 
 When opening the program, you will be presented with the following screen:
 
@@ -27,23 +28,9 @@ Before applying any sweeps or exporting models, you probably want to establish t
 
 As you can see, there are a number of default values and their corresponding units. 'Fabricating' a new device is as simple as typing in a new number for the device you want to build. For example, if you decided to build a GFET with a 100nm long and 50nm wide channel, simply enter 0.1 and 0.05 into the 'Channel Width' and 'Channel Length' boxes respectively. The top and bottom dielectric thicknesses determine the oxide capacitance between the graphene channel and the top and back gates respectively, and are as easy to change as the channel dimensions.
 
-The first two drop down boxes allow you to choose a dielectric material. Currently, SiO2, AlO3, HfO2 and monolayer h-BN are included, but this can be updated in the Dielectrics.txt file. Not all models include a back gate (e.g. Rodriguez), or your sweep may not use a back gate, so the second parameter may have little to no impact on the resulting device characteristics.
+The first two drop down boxes allow you to choose a dielectric material. Currently, SiO2, SiC, AlO3, AlN, HfO2, ZrO2, and monolayer h-BN are included, but this can be updated in the Dielectrics.txt file. To model single-gated devices, select "Air" as the back gate dielectric, and select the relevant dielectric and thickness for the top gate. If you, for example, wish to model a back-gated GFET using a silicon substrate as the gate, with a 90nm oxide layer, select SiO2 as the top gate dielectric and enter the oxide thickness in the back dielectric thickness box. 
 
 The mobility is the inherent mobility of the channel, and can be determined from the slope of the drain current with respect to the gate voltage. This is an empirical parameter and is useful for comparing the behaviour of an ideal (modelled) GFET to a real, fabricated device.
-
-Not every model makes use of all the available parameters and the following are only used by certain models. This means that not all parameters will affect the resulting characteristics. To avoid confusion, the applicable models will be given in brackets before the description.
-
-(Rodriguez, Thiele)
-The surface-phonon energy determines phonon scattering between the graphene channel and the dielectric. This is typically on the order of 10-100 meV and is material dependent. A default value for Al2O3 is used here, however you should verify the correct value to make sure your simulations are accurate.
-
-(Rodriguez, Thiele, Hu)
-The effective dopant density is an empirical factor to reflect dopants in the graphene channel, e.g. those that appear due to the fabrication process or e.g. atmospheric doping. This is typically a very small number, on the order of 10^-17 /cm2.
-
-(Jimenez, Thiele, Hu)
-The Fermi velocity is a parameter typically available in the literature.
-
-(Hu)
-Temperature is the operating temperature of the device, default is room temp. Only the model of Hu et al. accounts for this.
 
 ## Generated Sweep Models:
 

@@ -1,5 +1,5 @@
-# gfet-simulator
-## Python Program to Model GFET Characteristics
+# GFET Lab
+## A Python Program to Model GFET Characteristics
 
 Author: Nathaniel Tye (njt48@cam.ac.uk)
 Date: 01.05.2020
@@ -15,10 +15,12 @@ Please see Usage.md for a detailed guide on use of the software.
 ## Dependencies:
 This tool is written in Python 3.9 and depends on several external libraries for correct operation. Please make sure you have the following installed before use:
 
-* NuPy (https://numpy.org/)
+* NumPy (https://numpy.org/)
 * SciPy (https://www.scipy.org/)
 * MatPlotLib (https://matplotlib.org/stable/index.html)
 * Tkinter (Included with Python 3.7+)
+
+Prebuilt executables for Mac and Windows are available in the respective folders. Note that the Windows version requires "Dielectrics.txt" to be located in the same directory.
 
 ## Motivation:
 GFETs are being used in the research of several people in the group, and potentially by new students as well,
@@ -39,25 +41,24 @@ differences in existing GFET models, and instead be able to delve straight in an
 * Can export CSV files of the measured transfer and IV characteristics
 * Can load in a user-defined sweep from a CSV file for both gate and drain voltages 
   (Currently defaults back-gate voltages to 0 V for external sweeps.)
-* Can export SPICE model for Rodriguez and Jimenez GFET models
+* Can export SPICE models
 
-## Features to add:
+## Features to Add:
 * Additional models (e.g. multi-gate), alternative materials (e.g. MoS2)...
 * Include model parameters and other information in exported CSV files
 * Plot additional characteristics (e.g. conductivity, capacitance...)
 * 'Help' tab/window
 * Schematic of device in current model
 
-## Other general program functionality todo:
-* General stability, see where it crashes (probably add try-except clauses)
-* Aesthetics ('simulation running' label at the bottom, or some sort of popup window that closes when finished, )
-
+## Other Functionality to Implement:
+* Ensure stability
+* Aesthetics ('simulation running' label at the bottom, or some sort of popup window that closes when finished)
 
 ## Known Issues:
-* Transconducatance and frequency calculations are incorrect
+* Transconducatance and frequency calculations are placeholders and need to be implemented.
 * Mukherjee's model [2] does not currently work, but is instead a placeholder.
      
 ## References:
 [1] D. Jimenez, "Explicit Drain Current, Charge and Capacitance Model of Graphene Field-Effect Transistors," in IEEE Transactions on Electron Devices, vol. 58, no. 12, pp. 4377-4383, Dec. 2011, (https://doi.org/10.1109/TED.2011.2168960)
 
-[3] C. Mukherjee, J. Aguirre-Morales, S. Frégonèse, T. Zimmer and C. Maneux, "Versatile Compact Model for Graphene FET Targeting Reliability-Aware Circuit Design," in IEEE Transactions on Electron Devices, vol. 62, no. 3, pp. 757-763, March 2015, doi: 10.1109/TED.2015.2395134.
+[2] C. Mukherjee, J. Aguirre-Morales, S. Frégonèse, T. Zimmer and C. Maneux, "Versatile Compact Model for Graphene FET Targeting Reliability-Aware Circuit Design," in IEEE Transactions on Electron Devices, vol. 62, no. 3, pp. 757-763, March 2015, doi: 10.1109/TED.2015.2395134.
