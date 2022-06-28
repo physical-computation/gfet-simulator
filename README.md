@@ -3,7 +3,7 @@
 
 Author: Nathaniel Tye (njt48@cam.ac.uk)
 Date: 01.05.2020
-Updated: 22.06.2022
+Updated: 28.06.2022
 
 ## Purpose:
 This program is designed as a tool allowing people to experiment with different graphene field-effect transistor (GFET) parameters,
@@ -73,6 +73,7 @@ differences in existing GFET models, and instead be able to delve straight in an
 ## Known Issues:
 * Transconducatance and frequency calculations are placeholders and need to be implemented.
 * Mukherjee's model [2] does not currently work, but is instead a placeholder.
+* Release v0.1-2d-conf: Exported SPICE models can only consider a voltage input to the drain terminal, the next version will correct this, but it is not an issue for basic I-V and transfer characteristic sweeps.
      
 ## References:
 [1] D. Jimenez, "Explicit Drain Current, Charge and Capacitance Model of Graphene Field-Effect Transistors," in IEEE Transactions on Electron Devices, vol. 58, no. 12, pp. 4377-4383, Dec. 2011, (https://doi.org/10.1109/TED.2011.2168960)
