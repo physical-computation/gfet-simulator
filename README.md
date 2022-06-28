@@ -12,6 +12,22 @@ of bias conditions. We have implemented Jimenez's model [1], but we encourage co
 
 Please see Usage.md for a detailed guide on use of the software.
 
+The accompanying preprint paper is available [here](https://doi.org/10.48550/arxiv.2206.13239).
+
+To cite this article and tool, use the following:
+
+>@misc{https://doi.org/10.48550/arxiv.2206.13239,
+>  doi = {10.48550/ARXIV.2206.13239},
+>  url = {https://arxiv.org/abs/2206.13239},
+> author = {Tye, Nathaniel J. and Tadbier, Abdul Wadood and Hofmann, Stephan and Stanley-Marbell, Phillip},
+>  keywords = {Mesoscale and Nanoscale Physics (cond-mat.mes-hall), Applied Physics (physics.app-ph), FOS: Physical sciences, FOS: Physical sciences},
+>  title = {GFET Lab: A Graphene Field-Effect Transistor TCAD Tool},
+>  publisher = {arXiv},
+>  year = {2022},
+>  copyright = {arXiv.org perpetual, non-exclusive license}
+>}
+
+
 ## Dependencies:
 This tool is written in Python 3.9 and depends on several external libraries for correct operation. Please make sure you have the following installed before use:
 
