@@ -10,7 +10,7 @@
 
 N.B.: Before starting, please see the README to familiarise yourself with the purpose of this tool and make sure any dependencies are include, and also to see any known issues and/or planned improvements.
 
-To run the program, either open the 'main.py file, or the executable file for your operating system. The macOS folder contains an executable for Macintosh computers, and the Windows folder contains an executable for Windows computers. N.B.: For Windows, the "Dielectrics.txt" file must be in the same directory as the executable
+To run the program, either open the 'main.py file, or the executable file for your operating system.  The "Releases" section on the right of the repository should contain executable binaries for Windows and Macintosh operating systems. N.B.: For Windows, the "Dielectrics.txt" file must be in the same directory as the executable for the program to function.
 
 When opening the program, you will be presented with the following screen:
 
